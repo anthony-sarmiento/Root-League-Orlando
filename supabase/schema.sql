@@ -67,3 +67,22 @@ create policy "admin write" on games        for all using (is_admin()) with chec
 create policy "admin write" on game_results for all using (is_admin()) with check (is_admin());
 
 create policy "admins see admins" on admins for select using (is_admin());
+
+-- Saves a game and its four results in one transaction, so a failure can't leave
+-- half a game behind. Runs as the caller, so row-level security still requires an admin.
+create function log_game(p_played_on date, p_session_id uuid, p_results jsonb)
+returns uuid
+language plpgsql security invoker set search_path = public as $$
+declare
+  new_game_id uuid;
+begin
+  insert into games (played_on, session_id) values (p_played_on, p_session_id)
+  returning id into new_game_id;
+
+  insert into game_results (game_id, player_id, faction, placement)
+  select new_game_id, (r->>'player_id')::uuid, r->>'faction', (r->>'placement')::smallint
+  from jsonb_array_elements(p_results) as r;
+
+  return new_game_id;
+end;
+$$;

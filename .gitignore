@@ -42,3 +42,6 @@ next-env.d.ts
 
 # duplicate of .claude/skills/design-taste-frontend (installed by the skills CLI)
 /.agents/
+
+# keep the template, ignore real env files
+!.env.example

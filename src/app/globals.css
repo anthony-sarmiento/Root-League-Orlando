@@ -129,3 +129,50 @@ a.chip:hover { filter: brightness(0.96); }
   outline: 3px solid var(--color-acorn);
   outline-offset: 2px;
 }
+
+/* Form controls */
+.field {
+  width: 100%;
+  min-height: 2.75rem; /* comfortable tap target on phones */
+  border-radius: 0.75rem;
+  border: 2px solid rgba(75, 52, 38, 0.3);
+  background: #fffdf7;
+  padding: 0.4rem 0.75rem;
+  color: var(--color-bark);
+}
+.field:disabled { opacity: 0.6; }
+select.field option:disabled { color: rgba(75, 52, 38, 0.4); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-moss-deep);
+  background: var(--color-moss);
+  padding: 0.4rem 1.25rem;
+  font-weight: 800;
+  color: #fffaf0;
+  box-shadow: 0 3px 0 var(--color-moss-deep);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.06); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--color-moss-deep); }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+.btn.secondary {
+  background: var(--color-parchment-deep);
+  border-color: rgba(75, 52, 38, 0.35);
+  color: var(--color-bark);
+  box-shadow: 0 3px 0 rgba(75, 52, 38, 0.2);
+}
+.btn.danger {
+  background: transparent;
+  border-color: rgba(181, 68, 58, 0.5);
+  color: var(--color-berry);
+  box-shadow: none;
+  min-height: 2.25rem;
+  padding: 0.2rem 0.8rem;
+}
