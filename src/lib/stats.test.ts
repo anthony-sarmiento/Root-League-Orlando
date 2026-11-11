@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FactionId, Game, Placement, Player } from "./league";
-import { seasonByNumber, seasonForDate } from "./seasons";
+import { DEFAULT_SEASONS, featuredSeason, seasonByNumber, seasonForDate, seasonPhase } from "./seasons";
 import { buildFactionStats, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
 
 const players: Player[] = ["a", "b", "c", "d", "e"].map((id) => ({ id, name: id.toUpperCase() }));
@@ -65,28 +65,61 @@ describe("buildLeaderboard", () => {
 });
 
 describe("seasons", () => {
-  it("splits calendar months into two-month seasons", () => {
-    expect(seasonForDate("2026-10-31").number).toBe(1);
-    expect(seasonForDate("2026-11-01").number).toBe(2);
-    expect(seasonForDate("2026-12-31").number).toBe(2);
-    expect(seasonForDate("2027-01-01").number).toBe(3);
+  const S = DEFAULT_SEASONS; // S1: Jun 7 - Sep 7, S2: Nov 1 - Dec 20 (2026)
+
+  it("finds the season a date falls in, edges included", () => {
+    expect(seasonForDate(S, "2026-06-07")?.number).toBe(1);
+    expect(seasonForDate(S, "2026-09-07")?.number).toBe(1);
+    expect(seasonForDate(S, "2026-11-01")?.number).toBe(2);
+    expect(seasonForDate(S, "2026-12-20")?.number).toBe(2);
+  });
+
+  it("returns nothing for dates between seasons", () => {
+    expect(seasonForDate(S, "2026-06-06")).toBeUndefined();
+    expect(seasonForDate(S, "2026-09-08")).toBeUndefined();
+    expect(seasonForDate(S, "2026-12-21")).toBeUndefined();
+  });
+
+  it("labels seasons with their real dates", () => {
+    expect(S[0].label).toBe("Season 1 · Jun 7 – Sep 7, 2026");
+    expect(S[1].label).toBe("Season 2 · Nov 1 – Dec 20, 2026");
+  });
+
+  it("reports whether a season is upcoming, live or finished", () => {
+    expect(seasonPhase(S[1], "2026-10-31")).toBe("upcoming");
+    expect(seasonPhase(S[1], "2026-11-01")).toBe("live");
+    expect(seasonPhase(S[1], "2026-12-20")).toBe("live");
+    expect(seasonPhase(S[1], "2026-12-21")).toBe("finished");
+  });
+
+  it("features the live season, then the next upcoming one, then the latest finished", () => {
+    expect(featuredSeason(S, "2026-07-01")?.number).toBe(1);
+    expect(featuredSeason(S, "2026-11-11")?.number).toBe(2);
+    expect(featuredSeason(S, "2026-10-01")?.number).toBe(2); // between seasons: next up
+    expect(featuredSeason(S, "2027-02-01")?.number).toBe(2); // all finished: the latest
+    expect(featuredSeason([], "2026-11-11")).toBeUndefined();
   });
 
   it("only counts games inside the season", () => {
-    const games = [game("g1", "2026-10-31", ["a", "b", "c", "d"]), game("g2", "2026-11-01", ["a", "b", "c", "d"])];
-    expect(gamesInSeason(games, seasonByNumber(2)).map((g) => g.id)).toEqual(["g2"]);
+    const games = [
+      game("g0", "2026-10-15", ["a", "b", "c", "d"]), // off-season
+      game("g1", "2026-09-07", ["a", "b", "c", "d"]),
+      game("g2", "2026-11-01", ["a", "b", "c", "d"]),
+    ];
+    expect(gamesInSeason(games, seasonByNumber(S, 2)!).map((g) => g.id)).toEqual(["g2"]);
+    expect(gamesInSeason(games, seasonByNumber(S, 1)!).map((g) => g.id)).toEqual(["g1"]);
   });
 });
 
 describe("buildPlayerProfile", () => {
   it("computes totals and a per-season rank", () => {
     const games = [
-      game("g1", "2026-10-01", ["a", "b", "c", "d"]),
+      game("g1", "2026-08-01", ["a", "b", "c", "d"]),
       game("g2", "2026-11-03", ["a", "b", "c", "d"]),
       game("g3", "2026-11-05", ["b", "c", "a", "d"]),
     ];
     // Season 2: a = 5 + 2 = 7 LP, b = 3 + 5 = 8 LP.
-    const profile = buildPlayerProfile(players[0], players, games);
+    const profile = buildPlayerProfile(players[0], players, games, DEFAULT_SEASONS);
     expect(profile.games).toBe(3);
     expect(profile.wins).toBe(2);
     expect(profile.lp).toBe(12);
@@ -104,13 +137,13 @@ describe("buildPlayerProfile", () => {
       game("g3", "2026-11-03", ["b", "a", "c", "d"], eyrieFirst), // a 2nd as marquise
       game("g4", "2026-11-04", ["b", "c", "d", "a"]), // a 4th as vagabond
     ];
-    const profile = buildPlayerProfile(players[0], players, games);
+    const profile = buildPlayerProfile(players[0], players, games, DEFAULT_SEASONS);
     expect(profile.bestFaction?.faction).toBe("eyrie");
     expect(profile.bestFaction?.winrate).toBe(1);
   });
 
   it("falls back to any faction when none has enough games", () => {
-    const profile = buildPlayerProfile(players[0], players, [game("g1", "2026-11-01", ["a", "b", "c", "d"])]);
+    const profile = buildPlayerProfile(players[0], players, [game("g1", "2026-11-01", ["a", "b", "c", "d"])], DEFAULT_SEASONS);
     expect(profile.bestFaction?.faction).toBe("marquise");
   });
 });

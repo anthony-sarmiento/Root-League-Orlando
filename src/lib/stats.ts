@@ -7,7 +7,7 @@ import {
   type Placement,
   type Player,
 } from "./league";
-import { isInSeason, seasonByNumber, seasonForDate, type Season } from "./seasons";
+import { isInSeason, seasonForDate, type Season } from "./seasons";
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -136,7 +136,12 @@ export interface PlayerProfile {
   bySeason: SeasonRecord[]; // newest first
 }
 
-export function buildPlayerProfile(player: Player, players: Player[], games: Game[]): PlayerProfile {
+export function buildPlayerProfile(
+  player: Player,
+  players: Player[],
+  games: Game[],
+  seasons: Season[],
+): PlayerProfile {
   const byId = new Map(players.map((p) => [p.id, p]));
   const total = emptyTally();
   const factionTallies = new Map<FactionId, Tally>();
@@ -190,11 +195,16 @@ export function buildPlayerProfile(player: Player, players: Player[], games: Gam
     )[0] ?? null;
 
   // Season-by-season record, with the player's rank in each season.
-  const seasonNumbers = [...new Set(mine.map((g) => seasonForDate(g.playedOn).number))].sort(
-    (a, b) => b - a,
-  );
+  const seasonNumbers = [
+    ...new Set(
+      mine.flatMap((g) => {
+        const season = seasonForDate(seasons, g.playedOn);
+        return season ? [season.number] : [];
+      }),
+    ),
+  ].sort((a, b) => b - a);
   const bySeason: SeasonRecord[] = seasonNumbers.map((n) => {
-    const season = seasonByNumber(n);
+    const season = seasons.find((s) => s.number === n)!;
     const row = buildLeaderboard(players, gamesInSeason(games, season)).find(
       (r) => r.player.id === player.id,
     )!;

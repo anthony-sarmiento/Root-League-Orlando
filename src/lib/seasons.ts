@@ -1,24 +1,48 @@
 /**
- * Seasons last two calendar months. Season 1 starts on SEASON_ONE_START;
- * every later season follows back-to-back (Sep–Oct, Nov–Dec, Jan–Feb, ...).
+ * Seasons are an explicit list with their own start and end dates (they aren't all the
+ * same length). Real seasons live in the database `seasons` table and are managed by
+ * organizers; DEFAULT_SEASONS is the fallback used by the sample data and the unit tests.
  */
-
-/** First month of Season 1 (month is 1–12). Change this to match when your league really began. */
-export const SEASON_ONE_START = { year: 2026, month: 9 };
 
 const LEAGUE_TIME_ZONE = "America/New_York";
 
-export interface Season {
+export interface SeasonRow {
   number: number;
   startsOn: string; // YYYY-MM-DD
   endsOn: string; // YYYY-MM-DD (inclusive)
-  label: string; // "Season 2 · Nov–Dec 2026"
 }
+
+export interface Season extends SeasonRow {
+  label: string; // "Season 2 · Nov 1 – Dec 20, 2026"
+}
+
+export type SeasonPhase = "upcoming" | "live" | "finished";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const monthIndex = (year: number, month: number) => year * 12 + (month - 1);
-const pad = (n: number) => String(n).padStart(2, "0");
+function shortDate(iso: string, withYear: boolean): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${d}${withYear ? `, ${y}` : ""}`;
+}
+
+export function makeSeason(row: SeasonRow): Season {
+  const sameYear = row.startsOn.slice(0, 4) === row.endsOn.slice(0, 4);
+  const range = sameYear
+    ? `${shortDate(row.startsOn, false)} – ${shortDate(row.endsOn, true)}`
+    : `${shortDate(row.startsOn, true)} – ${shortDate(row.endsOn, true)}`;
+  return { ...row, label: `Season ${row.number} · ${range}` };
+}
+
+/** Season 1: Jun 7 – Sep 7, 2026. Season 2: Nov 1 – Dec 20, 2026. */
+export const DEFAULT_SEASONS: Season[] = [
+  makeSeason({ number: 1, startsOn: "2026-06-07", endsOn: "2026-09-07" }),
+  makeSeason({ number: 2, startsOn: "2026-11-01", endsOn: "2026-12-20" }),
+];
+
+/** Newest season first. */
+export function sortSeasons(seasons: Season[]): Season[] {
+  return [...seasons].sort((a, b) => b.number - a.number);
+}
 
 /** Today's date in Orlando, as YYYY-MM-DD. */
 export function todayISO(now: Date = new Date()): string {
@@ -30,52 +54,36 @@ export function todayISO(now: Date = new Date()): string {
   }).format(now);
 }
 
-export function seasonNumberForDate(iso: string): number {
-  const [year, month] = iso.split("-").map(Number);
-  const offset = monthIndex(year, month) - monthIndex(SEASON_ONE_START.year, SEASON_ONE_START.month);
-  return Math.floor(offset / 2) + 1;
-}
-
-export function seasonByNumber(number: number): Season {
-  const startIdx = monthIndex(SEASON_ONE_START.year, SEASON_ONE_START.month) + (number - 1) * 2;
-  const startYear = Math.floor(startIdx / 12);
-  const startMonth = (startIdx % 12) + 1;
-  const endIdx = startIdx + 1;
-  const endYear = Math.floor(endIdx / 12);
-  const endMonth = (endIdx % 12) + 1;
-  const lastDay = new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate();
-
-  const range =
-    startYear === endYear
-      ? `${MONTHS[startMonth - 1]}–${MONTHS[endMonth - 1]} ${startYear}`
-      : `${MONTHS[startMonth - 1]} ${startYear}–${MONTHS[endMonth - 1]} ${endYear}`;
-
-  return {
-    number,
-    startsOn: `${startYear}-${pad(startMonth)}-01`,
-    endsOn: `${endYear}-${pad(endMonth)}-${pad(lastDay)}`,
-    label: `Season ${number} · ${range}`,
-  };
-}
-
-export function seasonForDate(iso: string): Season {
-  return seasonByNumber(seasonNumberForDate(iso));
-}
-
-export function currentSeason(today: string = todayISO()): Season {
-  return seasonForDate(today);
-}
-
-/** Every season from Season 1 through the current one, newest first. */
-export function allSeasonsThrough(today: string = todayISO()): Season[] {
-  const latest = seasonNumberForDate(today);
-  const seasons: Season[] = [];
-  for (let n = latest; n >= 1; n--) seasons.push(seasonByNumber(n));
-  return seasons;
-}
-
 export function isInSeason(iso: string, season: Season): boolean {
   return iso >= season.startsOn && iso <= season.endsOn;
+}
+
+/** The season a date falls in, or undefined for dates between seasons. */
+export function seasonForDate(seasons: Season[], iso: string): Season | undefined {
+  return seasons.find((s) => isInSeason(iso, s));
+}
+
+export function seasonByNumber(seasons: Season[], number: number): Season | undefined {
+  return seasons.find((s) => s.number === number);
+}
+
+export function seasonPhase(season: Season, today: string): SeasonPhase {
+  if (today < season.startsOn) return "upcoming";
+  if (today > season.endsOn) return "finished";
+  return "live";
+}
+
+/**
+ * The season to feature by default: the one running now; otherwise the next one that
+ * hasn't started; otherwise the most recent finished one.
+ */
+export function featuredSeason(seasons: Season[], today: string): Season | undefined {
+  const byStart = [...seasons].sort((a, b) => a.startsOn.localeCompare(b.startsOn));
+  return (
+    byStart.find((s) => seasonPhase(s, today) === "live") ??
+    byStart.find((s) => seasonPhase(s, today) === "upcoming") ??
+    byStart[byStart.length - 1]
+  );
 }
 
 /** Whole days from `from` to `to` (both YYYY-MM-DD). */

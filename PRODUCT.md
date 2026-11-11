@@ -7,7 +7,7 @@
 web
 
 ## Stack
-Next.js (App Router, TypeScript, Tailwind) with Supabase (Postgres and Auth). The Supabase database is not connected yet; the site currently runs on deterministic sample data behind `getLeagueData()` in `src/lib/data.ts`.
+Next.js (App Router, TypeScript, Tailwind) with Supabase (Postgres and Auth), hosted on Vercel. Data is read through `getLeagueData()` in `src/lib/data.ts`; without Supabase credentials the site shows built-in sample data.
 
 ## Users
 - **Players on their phones** (primary): league members checking standings, LP and their own stats at a game night or between them.
@@ -22,19 +22,19 @@ A local, in-person Root league with two-month seasons, a prize pool for the seas
 
 ## Operating Context
 - Every game seats exactly 4 players. LP by finish: 1st = 5, 2nd = 3, 3rd = 2, 4th = 1.
-- Seasons last 2 calendar months; at season end the player with the most LP wins the prize pool. LP is computed from placements, never stored, so rule changes apply retroactively. Rules live in `src/lib/league.ts` and `src/lib/seasons.ts`.
+- Seasons are explicit date ranges kept in the database `seasons` table and managed by organizers: Season 1 ran Jun 7 – Sep 7, 2026; Season 2 runs Nov 1 – Dec 20, 2026, with game nights every other week. At season end the player with the most LP wins the prize pool. LP is computed from placements, never stored, so rule changes apply retroactively. LP rules live in `src/lib/league.ts`.
 - Season ties: most wins, then best average placement (a choice made by the builder, not yet confirmed by the league).
 - Only players with at least one game in a season appear on that season's leaderboard; there is no minimum-games requirement.
-- Games are played live at game nights ("sessions") in Orlando. Results are entered by admins.
-- Public read; admin-only writes (Supabase row-level security, admins listed in an `admins` table).
+- Games are played live at game nights ("sessions") in Orlando. Results are entered by organizers (admins). Season 1 results are being entered by hand.
+- Public read. Organizers (listed in an `admins` table) write everything; signed-in players can only edit their own profile and RSVP themselves to upcoming nights (Supabase row-level security).
+- Anyone can create an account (open sign-up, email confirmation off). Players create a profile or claim an existing name, which an organizer approves.
 
 ## Capabilities and Constraints
-- Pages today: Home, Leaderboard (per season), Players and player profiles, Factions (per season or all time), Game nights.
-- Not built yet: admin sign-in and result entry, session creation, session sign-ups/RSVPs.
+- Pages: Home, Leaderboard (per season), Players and player profiles, Factions (per season or all time), Game nights with RSVPs, Sign in / Sign up, Account (profile, claim a name), Organizer tools (log games, players, game nights, seasons, approve name claims).
 - Must be usable first on phones.
-- Faction colors must never be the only signal: always pair color with the faction's name or icon.
-- Site is public; only organizers sign in.
-- Undecided facts (do not invent): the real start date of Season 1 (currently assumed Sep 2026), the venue for game nights (currently "Location TBA"), the prize pool amount and how it is funded, and whether newcomers need to sign up in advance.
+- Faction identity is never color alone: always pair color with the faction's name or icon.
+- Site is public to read; accounts are optional and only needed to RSVP and have a profile.
+- Undecided facts (do not invent): the game night venue beyond what organizers enter, the prize pool amount and how it is funded.
 
 ## Brand Commitments
 - Name: **Root League Orlando**.
@@ -42,8 +42,8 @@ A local, in-person Root league with two-month seasons, a prize pool for the seas
 - The league owner has permission to use Root's official iconography. Footer credits Leder Games, used with permission.
 
 ## Evidence on Hand
-- No real league data yet: all players, games and sessions in the repo are made-up sample data (players such as Bramble and Thistle).
-- Official Root icons are not yet in the repository. Faction badges currently use emoji on colored circles; `public/factions/` and each faction's `icon` field in `src/lib/league.ts` are the intended slot for the real assets.
+- Official Root artwork (used with permission) is in `/assets` (not committed) and processed into `public/` by `scripts/build-assets.mjs`: faction head icons and patterned backgrounds, the Root logo, a hero illustration of the Woodland Alliance, and 70+ character portraits used as player avatars.
+- Real league data lives in Supabase and is entered by organizers. The built-in sample players (Bramble, Thistle, ...) exist only for demos.
 - Do not fabricate testimonials, real player names, attendance figures, venue names or prize amounts.
 
 ## Product Principles

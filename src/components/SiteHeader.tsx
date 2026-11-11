@@ -1,19 +1,12 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/players", label: "Players" },
-  { href: "/factions", label: "Factions" },
-  { href: "/sessions", label: "Sessions" },
-];
+import { Avatar } from "@/components/Avatar";
+import { SiteNav } from "@/components/SiteNav";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getViewer } from "@/lib/viewer";
 
 function Acorn() {
   return (
-    <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
+    <svg viewBox="0 0 48 48" className="h-8 w-8 sm:h-10 sm:w-10" aria-hidden="true">
       <path d="M24 4c3 0 5 2 5 4l-5 2-5-2c0-2 2-4 5-4Z" fill="#5f7d3b" />
       <path
         d="M8 20c0-5 7-8 16-8s16 3 16 8c0 2-1 3-2 3H10c-1 0-2-1-2-3Z"
@@ -32,31 +25,39 @@ function Acorn() {
   );
 }
 
-export function SiteHeader() {
-  const pathname = usePathname();
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+export async function SiteHeader() {
+  const viewer = await getViewer();
 
   return (
     <header className="plank">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 text-parchment">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 sm:px-6">
+        <Link href="/" className="order-1 flex items-center gap-2 text-parchment">
           <Acorn />
-          <span className="font-display text-xl font-bold leading-tight sm:text-2xl">
-            Root League <span className="text-honey">Orlando</span>
+          <span className="font-display text-lg leading-tight font-bold sm:text-2xl">
+            Root League <span className="text-[#f2c868]">Orlando</span>
           </span>
         </Link>
-        <nav aria-label="Main" className="flex flex-wrap gap-1">
-          {LINKS.map((l) => (
+
+        <div className="order-2 ml-auto md:order-3">
+          {viewer ? (
             <Link
-              key={l.href}
-              href={l.href}
-              className="nav-link"
-              aria-current={isActive(l.href) ? "page" : undefined}
+              href="/account"
+              className="inline-flex items-center gap-2 rounded-full bg-black/15 py-1 pr-4 pl-1 font-bold text-parchment transition-colors hover:bg-black/25"
             >
-              {l.label}
+              <Avatar name={viewer.player?.name ?? viewer.email ?? "Me"} avatar={viewer.player?.avatar} size={32} />
+              <span className="max-w-32 truncate">{viewer.player?.name ?? "My account"}</span>
             </Link>
-          ))}
-        </nav>
+          ) : isSupabaseConfigured ? (
+            <div className="flex items-center gap-2">
+              <Link href="/login" className="nav-link">Sign in</Link>
+              <Link href="/signup" className="btn acorn small hidden sm:inline-flex">Join the league</Link>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="order-3 w-full md:order-2 md:ml-auto md:w-auto">
+          <SiteNav />
+        </div>
       </div>
     </header>
   );

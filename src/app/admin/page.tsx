@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AddPlayerForm, AddSessionForm, DeleteGameForm } from "@/components/admin/SimpleForms";
+import { ClaimActions, SeasonForm } from "@/components/admin/SeasonAndClaimForms";
+import { PageHeader } from "@/components/PageHeader";
 import { LogGameForm } from "@/components/admin/LogGameForm";
 import { signOut } from "@/app/login/actions";
 import { getAdminContext } from "@/lib/admin";
@@ -25,7 +27,7 @@ export default async function AdminPage() {
     );
   }
 
-  const { user, isAdmin } = await getAdminContext();
+  const { user, isAdmin, supabase } = await getAdminContext();
 
   if (!isAdmin) {
     return (
@@ -43,8 +45,20 @@ export default async function AdminPage() {
     );
   }
 
-  const { players, sessions, games } = await getLeagueData();
+  const { players, sessions, games, seasons } = await getLeagueData();
   const today = todayISO();
+
+  // Open requests from people who say an existing name is theirs.
+  const { data: claimRows } = await supabase
+    .from("player_claims")
+    .select("user_id, claimant_email, note, created_at, players(name)")
+    .order("created_at");
+  const claims = (claimRows ?? []).map((c) => {
+    const joined = c.players as { name: string } | { name: string }[] | null;
+    const name = Array.isArray(joined) ? joined[0]?.name : joined?.name;
+    return { userId: c.user_id as string, email: c.claimant_email as string, note: c.note as string | null, playerName: name ?? "Unknown" };
+  });
+  const nextSeasonNumber = Math.max(0, ...seasons.map((x) => x.number)) + 1;
   const playerName = new Map(players.map((p) => [p.id, p.name]));
   const recent = [...games]
     .sort((a, b) => b.playedOn.localeCompare(a.playedOn) || b.id.localeCompare(a.id))
@@ -53,15 +67,33 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-4xl font-bold">Organizer tools</h1>
-          <p className="text-bark-soft">Signed in as {user.email}</p>
-        </div>
+      <PageHeader title="Organizer tools" pattern="duchy" description={`Signed in as ${user.email}`}>
         <form action={signOut}>
-          <button className="btn secondary">Sign out</button>
+          <button className="btn secondary small">Sign out</button>
         </form>
-      </header>
+      </PageHeader>
+
+      {claims.length > 0 && (
+        <section className="card stitched p-5">
+          <h2 className="mb-1 text-2xl font-bold">Name claims waiting for you</h2>
+          <p className="mb-3 text-bark-soft">
+            Approve only if you know this person is who they say they are. Approving gives them that player&apos;s games and points.
+          </p>
+          <ul className="divide-y-2 divide-dashed divide-bark/15">
+            {claims.map((c) => (
+              <li key={c.userId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p>
+                    <strong>{c.email}</strong> wants to be <strong>{c.playerName}</strong>
+                  </p>
+                  {c.note && <p className="text-sm text-bark-soft">“{c.note}”</p>}
+                </div>
+                <ClaimActions userId={c.userId} playerName={c.playerName} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="card stitched p-5">
         <h2 className="mb-3 text-2xl font-bold">Log a game</h2>
@@ -82,6 +114,21 @@ export default async function AdminPage() {
           <AddSessionForm today={today} />
         </section>
       </div>
+
+      <section className="card p-5">
+        <h2 className="mb-1 text-2xl font-bold">Seasons</h2>
+        <p className="mb-4 text-bark-soft">
+          Seasons can run any dates, but they can&apos;t overlap. A game counts towards the season it was played in.
+        </p>
+        <div className="space-y-4">
+          {[...seasons].reverse().map((x) => (
+            <SeasonForm key={`${x.number}-${x.startsOn}-${x.endsOn}`} number={x.number} startsOn={x.startsOn} endsOn={x.endsOn} />
+          ))}
+          <div className="border-t-2 border-dashed border-bark/15 pt-4">
+            <SeasonForm number={nextSeasonNumber} startsOn="" endsOn="" isNew />
+          </div>
+        </div>
+      </section>
 
       <section className="card p-5">
         <h2 className="mb-3 text-2xl font-bold">Recent games</h2>

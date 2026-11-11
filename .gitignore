@@ -45,3 +45,6 @@ next-env.d.ts
 
 # keep the template, ignore real env files
 !.env.example
+
+# raw artwork (~150 MB); optimized copies live in /public (see scripts/build-assets.mjs)
+/assets/

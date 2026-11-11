@@ -1,135 +1,195 @@
+import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { ArrowRight, Trophy } from "lucide-react";
 import { FactionBadge } from "@/components/FactionBadge";
+import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { LpScale } from "@/components/LpScale";
+import { Podium } from "@/components/Podium";
+import { SessionCard } from "@/components/SessionCard";
 import { getLeagueData } from "@/lib/data";
 import { formatDate, ordinal } from "@/lib/format";
-import { getFaction } from "@/lib/league";
-import { currentSeason, daysBetween, todayISO } from "@/lib/seasons";
-import { buildFactionStats, buildLeaderboard, gamesInSeason, leagueTotals } from "@/lib/stats";
+import { rsvpStateFor } from "@/lib/rsvp";
+import { daysBetween, featuredSeason, seasonPhase, todayISO } from "@/lib/seasons";
+import { buildLeaderboard, gamesInSeason, leagueTotals } from "@/lib/stats";
+import { getViewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { players, games, sessions } = await getLeagueData();
+  const [{ players, games, sessions, seasons, signups }, viewer] = await Promise.all([getLeagueData(), getViewer()]);
   const today = todayISO();
-  const season = currentSeason(today);
-  const seasonGames = gamesInSeason(games, season);
-  const leaderboard = buildLeaderboard(players, seasonGames);
+  const season = featuredSeason(seasons, today);
+  const phase = season ? seasonPhase(season, today) : undefined;
+  const leaderboard = season ? buildLeaderboard(players, gamesInSeason(games, season)) : [];
   const totals = leagueTotals(games);
-  const daysLeft = daysBetween(today, season.endsOn);
+  const daysLeft = season ? daysBetween(today, season.endsOn) : 0;
+  const daysToStart = season ? daysBetween(today, season.startsOn) : 0;
 
-  const nextSession = sessions
-    .filter((s) => s.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const playerById = new Map(players.map((p) => [p.id, p]));
+  const nextSession = sessions.filter((s) => s.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const attendees = nextSession
+    ? signups
+        .filter((s) => s.sessionId === nextSession.id)
+        .flatMap((s) => {
+          const p = playerById.get(s.playerId);
+          return p ? [p] : [];
+        })
+    : [];
 
   const recent = [...games]
     .sort((a, b) => b.playedOn.localeCompare(a.playedOn) || b.id.localeCompare(a.id))
     .slice(0, 4);
-  const playerName = new Map(players.map((p) => [p.id, p.name]));
 
-  const topFaction = buildFactionStats(players, games).find((f) => f.games >= 5);
+  const heroStyle = { "--pattern": "url(/patterns/alliance.webp)" } as CSSProperties;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Hero */}
-      <section className="card stitched px-6 py-10 text-center sm:px-12">
-        <p className="text-4xl" aria-hidden="true">🍂🌰🍄</p>
-        <h1 className="mt-2 text-4xl font-bold sm:text-5xl">Welcome to the clearing</h1>
-        <p className="mx-auto mt-3 max-w-xl text-lg text-bark-soft">
-          Orlando&apos;s live <strong>Root</strong> league. Gather your warriors, climb the
-          leaderboard, and claim the season&apos;s prize pool.
-        </p>
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Link href="/leaderboard" className="chip active text-base">View leaderboard</Link>
-          <Link href="/sessions" className="chip text-base">Game nights</Link>
+      <section
+        className="relative overflow-hidden rounded-[2rem] border-[1.5px] border-bark/15 bg-parchment-deep/80 shadow-[var(--shadow-card)]"
+        style={heroStyle}
+      >
+        <div className="pattern-fade pattern-hero" aria-hidden="true" />
+        <div className="relative grid items-center gap-6 p-6 sm:p-10 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-5">
+            <Image
+              src="/brand/root-logo.webp"
+              alt="Root: a game of woodland might and right"
+              width={1000}
+              height={324}
+              priority
+              className="hero-in w-full max-w-[400px] rounded-xl shadow-[0_10px_24px_-10px_rgba(75,52,38,0.5)]"
+            />
+            <h1 className="hero-in d1 text-4xl leading-[1.05] font-bold sm:text-5xl">Orlando&apos;s live Root league</h1>
+            <p className="hero-in d2 max-w-[48ch] text-lg text-bark">
+              Four players, one board, one season-long race. Join a game night, climb the leaderboard and chase the
+              prize pool. New to Root? You&apos;re welcome at the table.
+            </p>
+            <div className="hero-in d3 flex flex-wrap gap-3">
+              {viewer ? (
+                <>
+                  <Link href="/sessions" className="btn acorn">Join a game night</Link>
+                  <Link href="/account" className="btn secondary">My profile</Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/signup" className="btn acorn">Join the league</Link>
+                  <Link href="/leaderboard" className="btn secondary">See the standings</Link>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="hero-art mx-auto w-full max-w-[340px] md:max-w-none">
+            <Image
+              src="/art/hero.webp"
+              alt="A rabbit, a fox and a mouse of the Woodland Alliance raise their banner"
+              width={520}
+              height={520}
+              priority
+              className="h-auto w-full drop-shadow-[0_18px_24px_rgba(75,52,38,0.35)]"
+            />
+          </div>
         </div>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-5">
-        {/* Season standings */}
-        <section className="card md:col-span-3">
-          <div className="flex flex-wrap items-end justify-between gap-2 p-5 pb-2">
-            <div>
-              <h2 className="text-2xl font-bold">{season.label}</h2>
-              <p className="text-sm text-bark-soft">
-                {daysLeft > 0
-                  ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
-                  : daysLeft === 0
-                    ? "Final day!"
-                    : "Season over"}{" "}
-                · most LP takes the prize pool 🏆
+      {/* Standings */}
+      <section className="card p-5 sm:p-7">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-3xl font-bold">
+              <Trophy size={28} className="text-honey" aria-hidden="true" />
+              {season ? season.label.split(" · ")[0] : "No season yet"}
+            </h2>
+            {season && (
+              <p className="mt-1 text-bark-soft">
+                <span className="font-semibold text-bark">{season.label.split(" · ")[1]}.</span>{" "}
+                {phase === "live" &&
+                  `${daysLeft === 0 ? "Final day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}. Most LP takes the prize pool.`}
+                {phase === "upcoming" &&
+                  `Starts in ${daysToStart} day${daysToStart === 1 ? "" : "s"}. Most LP takes the prize pool.`}
+                {phase === "finished" && "Season complete. These are the final standings."}
               </p>
-            </div>
-            <Link href={`/leaderboard?season=${season.number}`} className="chip">Full standings →</Link>
+            )}
           </div>
-          <LeaderboardTable rows={leaderboard.slice(0, 5)} compact />
+          {season && (
+            <Link href={`/leaderboard?season=${season.number}`} className="chip">
+              Full standings <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+
+        {leaderboard.length === 0 ? (
+          <p className="mt-6 rounded-2xl border-2 border-dashed border-bark/20 p-6 text-center text-bark-soft">
+            No games yet this season. The first game night will put the first names on the board.
+          </p>
+        ) : (
+          <div className="mt-6 space-y-6">
+            <Podium rows={leaderboard} players={players} />
+            {leaderboard.length > 3 && (
+              <LeaderboardTable rows={leaderboard.slice(3, 8)} players={players} compact />
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Next game night + how it works */}
+      <div className="grid gap-6 md:grid-cols-5">
+        <section className="space-y-3 md:col-span-3">
+          <h2 className="text-3xl font-bold">Next game night</h2>
+          {nextSession ? (
+            <SessionCard
+              session={nextSession}
+              attendees={attendees}
+              state={rsvpStateFor(viewer, nextSession, signups, today)}
+              featured
+            />
+          ) : (
+            <p className="card p-6 text-bark-soft">Nothing is scheduled yet. Check back soon!</p>
+          )}
+          <Link href="/sessions" className="chip">
+            All game nights <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </section>
 
-        <div className="space-y-6 md:col-span-2">
-          {/* Next session */}
-          <section className="card stitched p-5">
-            <h2 className="text-xl font-bold">Next game night</h2>
-            {nextSession ? (
-              <>
-                <p className="mt-2 font-display text-2xl font-bold text-moss-deep">
-                  {formatDate(nextSession.date, { weekday: "long", month: "long", day: "numeric", year: undefined })}
-                </p>
-                <p className="text-bark-soft">{nextSession.title} · {nextSession.location}</p>
-              </>
-            ) : (
-              <p className="mt-2 text-bark-soft">Nothing scheduled yet. Check back soon!</p>
-            )}
-          </section>
-
-          {/* League at a glance */}
-          <section className="card p-5">
-            <h2 className="text-xl font-bold">League at a glance</h2>
-            <dl className="mt-3 grid grid-cols-2 gap-3 text-center">
-              <div className="rounded-xl bg-parchment p-3">
-                <dt className="text-xs font-bold uppercase tracking-wider text-bark-soft">Games played</dt>
-                <dd className="font-display text-3xl font-bold">{totals.games}</dd>
-              </div>
-              <div className="rounded-xl bg-parchment p-3">
-                <dt className="text-xs font-bold uppercase tracking-wider text-bark-soft">Players</dt>
-                <dd className="font-display text-3xl font-bold">{totals.players}</dd>
-              </div>
-            </dl>
-            {topFaction && (
-              <p className="mt-3 flex items-center gap-2 text-sm">
-                <FactionBadge faction={topFaction.faction} size={28} />
-                <span>
-                  <strong>{getFaction(topFaction.faction).name}</strong> has the best win rate so far.
-                </span>
-              </p>
-            )}
-          </section>
-        </div>
+        <section className="card p-5 sm:p-6 md:col-span-2">
+          <h2 className="text-2xl font-bold">How points work</h2>
+          <p className="mt-1 mb-4 text-bark-soft">Every game seats four. Where you finish sets your league points.</p>
+          <LpScale />
+        </section>
       </div>
 
       {/* Recent games */}
-      <section className="card p-5">
-        <h2 className="text-2xl font-bold">Recent games</h2>
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-          {recent.map((g) => (
-            <li key={g.id} className="rounded-xl border-2 border-dashed border-bark/15 bg-parchment/60 p-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-bark-soft">{formatDate(g.playedOn)}</p>
-              <ol className="mt-2 space-y-1">
-                {[...g.results]
-                  .sort((a, b) => a.placement - b.placement)
-                  .map((r) => (
-                    <li key={r.playerId} className="flex items-center gap-2">
-                      <span className="w-8 text-sm font-bold text-bark-soft">{ordinal(r.placement)}</span>
-                      <FactionBadge faction={r.faction} size={24} />
-                      <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
-                        {playerName.get(r.playerId) ?? "Unknown"}
-                      </Link>
-                    </li>
-                  ))}
-              </ol>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {recent.length > 0 && (
+        <section>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-3xl font-bold">Recent games</h2>
+            <p className="text-bark-soft">
+              {totals.games} games played by {totals.players} players so far.
+            </p>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {recent.map((g) => (
+              <li key={g.id} className="card p-4">
+                <p className="mb-2 text-sm font-bold text-bark-soft">{formatDate(g.playedOn)}</p>
+                <ol className="space-y-1.5">
+                  {[...g.results]
+                    .sort((a, b) => a.placement - b.placement)
+                    .map((r) => (
+                      <li key={r.playerId} className="flex items-center gap-2.5">
+                        <span className="w-9 text-sm font-bold text-bark-soft">{ordinal(r.placement)}</span>
+                        <FactionBadge faction={r.faction} size={28} />
+                        <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
+                          {playerById.get(r.playerId)?.name ?? "Unknown"}
+                        </Link>
+                      </li>
+                    ))}
+                </ol>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

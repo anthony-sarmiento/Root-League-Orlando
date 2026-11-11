@@ -42,16 +42,15 @@ export interface Faction {
   name: string;
   /** Badge colour (roughly each faction's board colour). */
   color: string;
-  /** Placeholder glyph until the official icons are dropped in. */
+  /** Fallback glyph, only used if an icon image fails to load. */
   emoji: string;
-  /**
-   * Optional path to the official icon under /public, e.g. "/factions/marquise.png".
-   * When set, it's used instead of the emoji.
-   */
-  icon?: string;
+  /** Official faction icon (a small WebP under /public/factions). */
+  icon: string;
+  /** Tileable patterned background in the faction's colours, for card banners. */
+  pattern: string;
 }
 
-export const FACTIONS: Faction[] = [
+const FACTION_DATA: Omit<Faction, "icon" | "pattern">[] = [
   { id: "marquise", name: "Marquise de Cat", color: "#d9762b", emoji: "🐱" },
   { id: "eyrie", name: "Eyrie Dynasties", color: "#3f6fa8", emoji: "🦅" },
   { id: "alliance", name: "Woodland Alliance", color: "#5f9a4a", emoji: "🌿" },
@@ -63,6 +62,13 @@ export const FACTIONS: Faction[] = [
   { id: "keepers", name: "Keepers in Iron", color: "#6f7f8f", emoji: "🦡" },
   { id: "hundreds", name: "Lord of the Hundreds", color: "#b5443a", emoji: "🐀" },
 ];
+
+// Icons and patterns are generated into /public by scripts/build-assets.mjs.
+export const FACTIONS: Faction[] = FACTION_DATA.map((f) => ({
+  ...f,
+  icon: `/factions/${f.id}.webp`,
+  pattern: `/patterns/${f.id}.webp`,
+}));
 
 const FACTION_INDEX = new Map(FACTIONS.map((f) => [f.id, f]));
 
@@ -77,6 +83,17 @@ export function getFaction(id: FactionId): Faction {
 export interface Player {
   id: string;
   name: string;
+  /** Short self-written blurb shown on the public profile. */
+  bio?: string;
+  favoriteFaction?: FactionId;
+  /** Avatar id from src/lib/avatars.generated.ts. */
+  avatar?: string;
+}
+
+/** A player RSVP for a game night. */
+export interface Signup {
+  sessionId: string;
+  playerId: string;
 }
 
 export interface GameResult {

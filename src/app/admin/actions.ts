@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminForAction } from "@/lib/admin";
 import { validateGameInput, type GameInput } from "@/lib/game-input";
 import { PLACEMENTS, type FactionId } from "@/lib/league";
+import { validateSeasonInput } from "@/lib/season-input";
 
 export interface FormState {
   ok?: string;
@@ -102,5 +103,61 @@ export async function deleteGame(formData: FormData): Promise<void> {
   const id = text(formData, "gameId");
   if (!id) return;
   await admin.supabase.from("games").delete().eq("id", id);
+  refresh();
+}
+
+/** Organizer confirms that an account owns an existing player name. */
+export async function approveClaim(formData: FormData): Promise<void> {
+  const admin = await requireAdminForAction();
+  if (!admin) return;
+  const userId = text(formData, "userId");
+  if (!userId) return;
+  const { error } = await admin.supabase.rpc("approve_claim", { p_user_id: userId });
+  if (error) console.error("[approve-claim] failed:", error.code, error.message);
+  refresh();
+}
+
+export async function rejectClaim(formData: FormData): Promise<void> {
+  const admin = await requireAdminForAction();
+  if (!admin) return;
+  const userId = text(formData, "userId");
+  if (!userId) return;
+  await admin.supabase.from("player_claims").delete().eq("user_id", userId);
+  refresh();
+}
+
+/** Adds a season, or changes the dates of an existing one (matched by number). */
+export async function saveSeason(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const candidate = {
+    number: Number(text(formData, "number")),
+    startsOn: text(formData, "startsOn"),
+    endsOn: text(formData, "endsOn"),
+  };
+
+  const { data: rows, error: loadError } = await admin.supabase.from("seasons").select("number, starts_on, ends_on");
+  if (loadError) return { errors: ["Couldn't load the existing seasons. Try again."] };
+  const existing = (rows ?? []).map((r) => ({ number: r.number, startsOn: r.starts_on, endsOn: r.ends_on }));
+
+  const errors = validateSeasonInput(candidate, existing);
+  if (errors.length) return { errors };
+
+  const { error } = await admin.supabase
+    .from("seasons")
+    .upsert({ number: candidate.number, starts_on: candidate.startsOn, ends_on: candidate.endsOn });
+  if (error) return { errors: ["Couldn't save that season."] };
+
+  refresh();
+  return { ok: `Season ${candidate.number} saved.` };
+}
+
+export async function deleteSeason(formData: FormData): Promise<void> {
+  const admin = await requireAdminForAction();
+  if (!admin) return;
+  const number = Number(text(formData, "number"));
+  if (!Number.isInteger(number)) return;
+  await admin.supabase.from("seasons").delete().eq("number", number);
   refresh();
 }
