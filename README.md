@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Root League Orlando 🍂
 
-## Getting Started
+A woodland-themed site for organizing live **Root** board game sessions in Orlando: game nights, stats, and a seasonal League Points (LP) leaderboard.
 
-First, run the development server:
+## Stack
+
+Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres + Auth) — *database not wired up yet; the site runs on sample data.*
+
+## League rules
+
+All rules live in [`src/lib/league.ts`](src/lib/league.ts) and [`src/lib/seasons.ts`](src/lib/seasons.ts):
+
+- 4 players per game. LP by finish: **1st = 5, 2nd = 3, 3rd = 2, 4th = 1**.
+- Seasons last 2 calendar months. The player with the most LP at season end wins the prize pool.
+- Season ties: most wins, then best average placement.
+- LP is never stored — it's computed from placements, so changing the rules updates history too.
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Layout
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/lib/stats.ts` — leaderboard, player profile and faction stat calculations
+- `src/lib/data.ts` — the one place pages get data from (swap sample data for Supabase here)
+- `src/lib/sample-data.ts` — made-up demo league
+- `supabase/schema.sql` — database tables and row-level security (public read, admin write)
+- `src/components/FactionBadge.tsx` — faction icons; set `icon` per faction in `league.ts` once images are in `public/factions/`

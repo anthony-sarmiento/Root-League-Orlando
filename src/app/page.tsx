@@ -1,69 +1,135 @@
-import Image from "next/image";
+import Link from "next/link";
+import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { FactionBadge } from "@/components/FactionBadge";
+import { getLeagueData } from "@/lib/data";
+import { formatDate, ordinal } from "@/lib/format";
+import { getFaction } from "@/lib/league";
+import { currentSeason, daysBetween, todayISO } from "@/lib/seasons";
+import { buildFactionStats, buildLeaderboard, gamesInSeason, leagueTotals } from "@/lib/stats";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const { players, games, sessions } = await getLeagueData();
+  const today = todayISO();
+  const season = currentSeason(today);
+  const seasonGames = gamesInSeason(games, season);
+  const leaderboard = buildLeaderboard(players, seasonGames);
+  const totals = leagueTotals(games);
+  const daysLeft = daysBetween(today, season.endsOn);
+
+  const nextSession = sessions
+    .filter((s) => s.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+
+  const recent = [...games]
+    .sort((a, b) => b.playedOn.localeCompare(a.playedOn) || b.id.localeCompare(a.id))
+    .slice(0, 4);
+  const playerName = new Map(players.map((p) => [p.id, p.name]));
+
+  const topFaction = buildFactionStats(players, games).find((f) => f.games >= 5);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="card stitched px-6 py-10 text-center sm:px-12">
+        <p className="text-4xl" aria-hidden="true">🍂🌰🍄</p>
+        <h1 className="mt-2 text-4xl font-bold sm:text-5xl">Welcome to the clearing</h1>
+        <p className="mx-auto mt-3 max-w-xl text-lg text-bark-soft">
+          Orlando&apos;s live <strong>Root</strong> league. Gather your warriors, climb the
+          leaderboard, and claim the season&apos;s prize pool.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Link href="/leaderboard" className="chip active text-base">View leaderboard</Link>
+          <Link href="/sessions" className="chip text-base">Game nights</Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <div className="grid gap-6 md:grid-cols-5">
+        {/* Season standings */}
+        <section className="card md:col-span-3">
+          <div className="flex flex-wrap items-end justify-between gap-2 p-5 pb-2">
+            <div>
+              <h2 className="text-2xl font-bold">{season.label}</h2>
+              <p className="text-sm text-bark-soft">
+                {daysLeft > 0
+                  ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
+                  : daysLeft === 0
+                    ? "Final day!"
+                    : "Season over"}{" "}
+                · most LP takes the prize pool 🏆
+              </p>
+            </div>
+            <Link href={`/leaderboard?season=${season.number}`} className="chip">Full standings →</Link>
+          </div>
+          <LeaderboardTable rows={leaderboard.slice(0, 5)} compact />
+        </section>
+
+        <div className="space-y-6 md:col-span-2">
+          {/* Next session */}
+          <section className="card stitched p-5">
+            <h2 className="text-xl font-bold">Next game night</h2>
+            {nextSession ? (
+              <>
+                <p className="mt-2 font-display text-2xl font-bold text-moss-deep">
+                  {formatDate(nextSession.date, { weekday: "long", month: "long", day: "numeric", year: undefined })}
+                </p>
+                <p className="text-bark-soft">{nextSession.title} · {nextSession.location}</p>
+              </>
+            ) : (
+              <p className="mt-2 text-bark-soft">Nothing scheduled yet. Check back soon!</p>
+            )}
+          </section>
+
+          {/* League at a glance */}
+          <section className="card p-5">
+            <h2 className="text-xl font-bold">League at a glance</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-3 text-center">
+              <div className="rounded-xl bg-parchment p-3">
+                <dt className="text-xs font-bold uppercase tracking-wider text-bark-soft">Games played</dt>
+                <dd className="font-display text-3xl font-bold">{totals.games}</dd>
+              </div>
+              <div className="rounded-xl bg-parchment p-3">
+                <dt className="text-xs font-bold uppercase tracking-wider text-bark-soft">Players</dt>
+                <dd className="font-display text-3xl font-bold">{totals.players}</dd>
+              </div>
+            </dl>
+            {topFaction && (
+              <p className="mt-3 flex items-center gap-2 text-sm">
+                <FactionBadge faction={topFaction.faction} size={28} />
+                <span>
+                  <strong>{getFaction(topFaction.faction).name}</strong> has the best win rate so far.
+                </span>
+              </p>
+            )}
+          </section>
         </div>
-      </main>
+      </div>
+
+      {/* Recent games */}
+      <section className="card p-5">
+        <h2 className="text-2xl font-bold">Recent games</h2>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {recent.map((g) => (
+            <li key={g.id} className="rounded-xl border-2 border-dashed border-bark/15 bg-parchment/60 p-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-bark-soft">{formatDate(g.playedOn)}</p>
+              <ol className="mt-2 space-y-1">
+                {[...g.results]
+                  .sort((a, b) => a.placement - b.placement)
+                  .map((r) => (
+                    <li key={r.playerId} className="flex items-center gap-2">
+                      <span className="w-8 text-sm font-bold text-bark-soft">{ordinal(r.placement)}</span>
+                      <FactionBadge faction={r.faction} size={24} />
+                      <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
+                        {playerName.get(r.playerId) ?? "Unknown"}
+                      </Link>
+                    </li>
+                  ))}
+              </ol>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
