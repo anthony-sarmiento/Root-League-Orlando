@@ -1,29 +1,26 @@
-import type { CSSProperties, ReactNode } from "react";
-import { getFaction, type FactionId } from "@/lib/league";
+import type { ReactNode } from "react";
+import { Banner } from "@/components/Banner";
+import { Ornament } from "@/components/Ornament";
+import type { FactionId } from "@/lib/league";
 
 interface Props {
   title: string;
   description?: ReactNode;
-  /** Which faction's patterned artwork fades in behind the header. */
+  /** Which faction's patterned artwork shows through the banner. */
   pattern?: FactionId;
   /** Actions or pickers shown under the title. */
   children?: ReactNode;
 }
 
 export function PageHeader({ title, description, pattern = "alliance", children }: Props) {
-  const style = { "--pattern": `url(${getFaction(pattern).pattern})` } as CSSProperties;
-
   return (
-    <header
-      className="relative overflow-hidden rounded-[1.5rem] border-[1.5px] border-bark/15 bg-parchment-deep/80 px-5 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-8"
-      style={style}
-    >
-      <div className="pattern-fade" aria-hidden="true" />
-      <div className="relative">
-        <h1 className="text-4xl font-bold sm:text-5xl">{title}</h1>
-        {description && <p className="mt-2 max-w-[60ch] text-lg text-bark-soft">{description}</p>}
-        {children && <div className="mt-4">{children}</div>}
+    <Banner pattern={pattern}>
+      <div className="py-10 sm:py-14">
+        <h1 className="text-4xl font-bold sm:text-6xl">{title}</h1>
+        <Ornament className="mt-3 w-40 text-honey sm:w-56" />
+        {description && <p className="mt-4 max-w-[62ch] text-lg text-parchment/85 sm:text-xl">{description}</p>}
+        {children && <div className="mt-6">{children}</div>}
       </div>
-    </header>
+    </Banner>
   );
 }

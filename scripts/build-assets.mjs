@@ -49,6 +49,10 @@ const FACTION_ICONS = {
   duchy: "faction-duchy.png",
   keepers: "faction-keepers.png",
   hundreds: "faction-lord of the hundreds.png",
+  // Homeland Expansion: no official faction icons were supplied, so these use the species illustrations.
+  frogs: "pic8700754.webp",
+  bats: "pic8700758.webp",
+  knaves: "pic8491843.webp",
 };
 for (const [id, file] of Object.entries(FACTION_ICONS)) {
   toWebp(find(file), path.join(PUBLIC, "factions", `${id}.webp`), { maxW: 192, quality: 85 });
@@ -66,13 +70,15 @@ const FACTION_PATTERNS = {
   duchy: "RootBG_Moles.png",
   keepers: "RootBG_Badgers.png",
   hundreds: "RootBG_Rats.png",
+  frogs: "RootBG_Frogs.png",
+  bats: "RootBG_Bats.png",
+  knaves: "RootBG_Knaves.png",
 };
 for (const [id, file] of Object.entries(FACTION_PATTERNS)) {
   toWebp(find(file), path.join(PUBLIC, "patterns", `${id}.webp`), { maxW: 900, quality: 68 });
 }
 
-// ---- Brand and hero art -----------------------------------------------------
-toWebp(find("Root_Logo.png"), path.join(PUBLIC, "brand", "root-logo.webp"), { maxW: 1000, quality: 85 });
+// ---- Hero art -----------------------------------------------------
 toWebp(find("141.png"), path.join(PUBLIC, "art", "hero.webp"), { maxW: 520, quality: 85 });
 // Tiny woodland-folk icons, used as decorative bullets.
 for (const [id, file] of Object.entries({ bunny: "Bunny_Icon.png", fox: "Fox_Icon.png", mouse: "Mouse_Icon.png" })) {
@@ -122,6 +128,6 @@ const kb = (dir) =>
     walk(dir).reduce((sum, f) => sum + statSync(f).size, 0) / 1024,
   );
 console.log(`Avatars: ${avatars.length}`);
-for (const d of ["factions", "patterns", "brand", "art", "avatars"]) {
+for (const d of ["factions", "patterns", "art", "avatars"]) {
   console.log(`public/${d}: ${kb(path.join(PUBLIC, d))} KB`);
 }

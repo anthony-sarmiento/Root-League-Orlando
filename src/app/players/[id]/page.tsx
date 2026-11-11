@@ -1,9 +1,9 @@
-import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { Banner } from "@/components/Banner";
 import { FactionBadge } from "@/components/FactionBadge";
 import { getLeagueData } from "@/lib/data";
 import { formatDate, ordinal, pct } from "@/lib/format";
@@ -30,43 +30,37 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const best = profile.bestFaction;
   const favorite = player.favoriteFaction ?? best?.faction;
   const isMe = viewer?.player?.id === player.id;
-  const bannerStyle = { "--pattern": `url(${getFaction(favorite ?? "alliance").pattern})` } as CSSProperties;
 
   return (
     <div className="space-y-8">
-      <p>
-        <Link href="/players" className="inline-flex items-center gap-1.5 font-bold text-moss-deep hover:underline">
-          <ArrowLeft size={18} aria-hidden="true" /> All players
-        </Link>
-      </p>
-
-      <header
-        className="relative overflow-hidden rounded-[1.5rem] border-[1.5px] border-bark/15 bg-parchment-deep/80 shadow-[var(--shadow-card)]"
-        style={bannerStyle}
-      >
-        <div className="pattern-fade" aria-hidden="true" />
-        <div className="relative flex flex-wrap items-center gap-5 p-6 sm:p-8">
-          <Avatar name={player.name} avatar={player.avatar} size={112} className="shadow-[0_10px_20px_-8px_rgba(75,52,38,0.45)]" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <h1 className="text-4xl font-bold sm:text-5xl">{player.name}</h1>
-            {player.bio && <p className="max-w-[55ch] text-lg">{player.bio}</p>}
-            {favorite && (
-              <p className="flex items-center gap-2">
-                <FactionBadge faction={favorite} size={32} />
-                <span>
-                  <span className="text-bark-soft">{player.favoriteFaction ? "Favorite faction: " : "Best faction: "}</span>
-                  <strong>{getFaction(favorite).name}</strong>
-                </span>
-              </p>
-            )}
-            {isMe && (
-              <Link href="/account" className="btn secondary small mt-1">
-                <Pencil size={16} aria-hidden="true" /> Edit profile
-              </Link>
-            )}
+      <Banner pattern={favorite ?? "alliance"}>
+        <div className="py-8 sm:py-12">
+          <Link href="/players" className="inline-flex items-center gap-1.5 font-bold text-[#f2c868] hover:underline">
+            <ArrowLeft size={18} aria-hidden="true" /> All players
+          </Link>
+          <div className="mt-5 flex flex-wrap items-center gap-6">
+            <Avatar name={player.name} avatar={player.avatar} size={136} className="shadow-[0_14px_26px_-8px_rgba(0,0,0,0.6)] ring-4 ring-honey/70" />
+            <div className="min-w-0 flex-1 space-y-3">
+              <h1 className="text-5xl font-bold sm:text-6xl">{player.name}</h1>
+              {player.bio && <p className="max-w-[55ch] text-lg text-parchment/90">{player.bio}</p>}
+              {favorite && (
+                <p className="flex items-center gap-2">
+                  <FactionBadge faction={favorite} size={36} />
+                  <span>
+                    <span className="text-parchment/75">{player.favoriteFaction ? "Favorite faction: " : "Best faction: "}</span>
+                    <strong>{getFaction(favorite).name}</strong>
+                  </span>
+                </p>
+              )}
+              {isMe && (
+                <Link href="/account" className="btn secondary small mt-1">
+                  <Pencil size={16} aria-hidden="true" /> Edit profile
+                </Link>
+              )}
+            </div>
           </div>
         </div>
-      </header>
+      </Banner>
 
       <section className="card p-5 sm:p-7">
         <h2 className="text-2xl font-bold">Lifetime record</h2>

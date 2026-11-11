@@ -30,7 +30,7 @@ To see the site with demo data even when `.env.local` is set, run `node scripts/
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, then `0002_accounts_rsvps_seasons.sql`. (Run 0002 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
+2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, then `0003_homeland_factions.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
 3. Copy `.env.example` to `.env.local` and fill in the project URL and publishable (or anon) key from *Project Settings → API*.
 4. *Authentication → Providers → Email*: turn **Confirm email** off, so players can sign up instantly. Set the Site URL under *Authentication → URL Configuration* to your Vercel domain.
 5. Make yourself an organizer: sign up on the site (or *Authentication → Users → Add user*), then run:
@@ -58,7 +58,7 @@ Only the publishable key belongs in the site; never put a Supabase `service_role
 
 ## Artwork
 
-The original Root artwork lives in `/assets` (about 150 MB, **not committed**). `npm run assets` turns it into small WebP files under `public/` (faction icons, patterned backgrounds, the logo, hero art and 70+ player portraits) and regenerates `src/lib/avatars.generated.ts`. It needs `ffmpeg` on your PATH. The committed `public/` files are all the site needs, so you only re-run this when the artwork changes. Root and its iconography are © Leder Games, used with permission.
+The original Root artwork lives in `/assets` (about 150 MB, **not committed**). `npm run assets` turns it into small WebP files under `public/` (faction icons, patterned backgrounds, hero art and 70+ player portraits) and regenerates `src/lib/avatars.generated.ts`. It needs `ffmpeg` on your PATH. The committed `public/` files are all the site needs, so you only re-run this when the artwork changes. Root and its iconography are © Leder Games, used with permission.
 
 ## Layout
 

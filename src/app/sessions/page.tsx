@@ -34,7 +34,7 @@ export default async function SessionsPage() {
       <PageHeader
         title="Game nights"
         pattern="riverfolk"
-        description="Live Root sessions in Orlando. Join a night ahead of time so organizers can seat tables of four."
+        description="Live Root game nights in Orlando. Several tables play at once, each seating four, and you can play as many games as the night allows. RSVP ahead so organizers can plan tables."
       />
 
       <section className="space-y-4">

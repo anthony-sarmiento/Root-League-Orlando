@@ -35,7 +35,10 @@ export type FactionId =
   | "corvids"
   | "duchy"
   | "keepers"
-  | "hundreds";
+  | "hundreds"
+  | "frogs"
+  | "bats"
+  | "knaves";
 
 export interface Faction {
   id: FactionId;
@@ -61,6 +64,10 @@ const FACTION_DATA: Omit<Faction, "icon" | "pattern">[] = [
   { id: "duchy", name: "Underground Duchy", color: "#b0603f", emoji: "⛏️" },
   { id: "keepers", name: "Keepers in Iron", color: "#6f7f8f", emoji: "🦡" },
   { id: "hundreds", name: "Lord of the Hundreds", color: "#b5443a", emoji: "🐀" },
+  // The Homeland Expansion.
+  { id: "frogs", name: "Lilypad Diaspora", color: "#98a32f", emoji: "🐸" },
+  { id: "bats", name: "Twilight Council", color: "#8a4b66", emoji: "🦇" },
+  { id: "knaves", name: "Knaves of the Deepwood", color: "#3b4f7a", emoji: "🦨" },
 ];
 
 // Icons and patterns are generated into /public by scripts/build-assets.mjs.

@@ -15,6 +15,9 @@
   --color-honey: #e2b04a;
   --color-berry: #b5443a;
   --color-river: #3d8a8c;
+  --color-forest: #2f4a27;
+  --color-forest-deep: #1b2a17;
+  --color-night: #2b1d14;
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-nunito);
@@ -50,6 +53,7 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   caret-color: var(--color-acorn);
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
 h1, h2, h3, h4 {
@@ -302,4 +306,123 @@ textarea.field { min-height: 6rem; resize: vertical; }
   html { scroll-behavior: auto; }
   .hero-in, .hero-art { animation: none; }
   .btn, a.card, .card.interactive { transition: none; }
+}
+
+
+/* ------------------------------------------------------------ Bands & banners */
+
+/* Page content width. Bands (.bleed) run edge to edge and re-contain their content with .shell. */
+.shell { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+@media (min-width: 640px) { .shell { padding-inline: 2rem; } }
+.bleed { width: 100vw; margin-left: calc(50% - 50vw); }
+
+/* A dark forest banner with a faction pattern showing through. Used for the hero and every page header. */
+.banner {
+  position: relative;
+  isolation: isolate;
+  color: var(--color-parchment);
+  background:
+    radial-gradient(90% 120% at 88% 0%, rgba(226, 176, 74, 0.22), transparent 60%),
+    linear-gradient(180deg, #34502b 0%, var(--color-forest-deep) 100%);
+}
+.banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--pattern);
+  background-size: 520px auto;
+  background-position: center;
+  opacity: 0.3;
+  -webkit-mask-image: linear-gradient(95deg, transparent 5%, #000 85%);
+  mask-image: linear-gradient(95deg, transparent 5%, #000 85%);
+}
+/* Hanging scalloped edge, like bunting, so the band doesn't end in a flat line. */
+.banner::after,
+.band-dark::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 14px 0, var(--edge, var(--color-forest-deep)) 13px, transparent 13.5px) 0 0 / 28px 14px repeat-x;
+}
+.banner .chip { background: rgba(247, 239, 220, 0.14); border-color: rgba(247, 239, 220, 0.35); color: var(--color-parchment); }
+.banner a.chip:hover { background: rgba(247, 239, 220, 0.26); }
+.banner .chip.active, .banner .chip[aria-current="true"] {
+  background: var(--color-honey);
+  border-color: #f2c868;
+  color: var(--color-night);
+}
+.banner a.chip.active:hover, .banner a.chip[aria-current="true"]:hover { background: #ebbc58; }
+.banner .btn.secondary { background: linear-gradient(#f7efdc, #e9d7ae); }
+
+.band-dark {
+  position: relative;
+  isolation: isolate;
+  --edge: var(--color-night);
+  color: var(--color-parchment);
+  background:
+    radial-gradient(70% 90% at 15% 0%, rgba(95, 125, 59, 0.28), transparent 65%),
+    linear-gradient(180deg, #3a2819 0%, var(--color-night) 100%);
+}
+.band-dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgba(247, 239, 220, 0.08) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+/* Faction tile: the faction's own pattern, a dark wash for legibility, and its icon. */
+.faction-tile {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 11rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(247, 239, 220, 0.18);
+  background: var(--tint, #444) var(--pattern) center / 300px auto;
+  padding: 1rem;
+  color: var(--color-parchment);
+  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, 0.7);
+  transition: transform 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out);
+}
+.faction-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(22, 15, 9, 0.94) 32%, rgba(22, 15, 9, 0.4) 100%);
+}
+.faction-tile:hover {
+  transform: translateY(-4px);
+  border-color: var(--tint, #f2c868);
+  box-shadow: 0 22px 36px -16px rgba(0, 0, 0, 0.85);
+}
+
+/* A fixed-width date plaque, like a wax-sealed invitation. */
+.plaque {
+  background: linear-gradient(#fffaf0, #f5e8c8);
+  border: 2px solid rgba(75, 52, 38, 0.3);
+  box-shadow: 0 1px 0 #fff inset, 0 10px 18px -8px rgba(75, 52, 38, 0.45);
+}
+
+/* Section titles get a small leafy rule underneath. */
+.leaf-rule { display: block; color: var(--color-moss); }
+
+@media (prefers-reduced-motion: reduce) {
+  .faction-tile { transition: none; }
+}
+
+/* Keep the pattern calm behind full-width text on phones. */
+@media (max-width: 767px) {
+  .banner::before { opacity: 0.2; }
 }

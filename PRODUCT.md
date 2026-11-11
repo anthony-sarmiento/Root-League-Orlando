@@ -42,7 +42,7 @@ A local, in-person Root league with two-month seasons, a prize pool for the seas
 - The league owner has permission to use Root's official iconography. Footer credits Leder Games, used with permission.
 
 ## Evidence on Hand
-- Official Root artwork (used with permission) is in `/assets` (not committed) and processed into `public/` by `scripts/build-assets.mjs`: faction head icons and patterned backgrounds, the Root logo, a hero illustration of the Woodland Alliance, and 70+ character portraits used as player avatars.
+- Official Root artwork (used with permission) is in `/assets` (not committed) and processed into `public/` by `scripts/build-assets.mjs`: faction head icons and patterned backgrounds, a hero illustration of the Woodland Alliance, and 70+ character portraits used as player avatars.
 - Real league data lives in Supabase and is entered by organizers. The built-in sample players (Bramble, Thistle, ...) exist only for demos.
 - Do not fabricate testimonials, real player names, attendance figures, venue names or prize amounts.
 

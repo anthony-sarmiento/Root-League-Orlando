@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             Showing sample data. The real league database isn&apos;t connected yet.
           </p>
         )}
-        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-8">{children}</main>
         <SiteFooter />
       </body>
     </html>

@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -133,6 +133,11 @@ await mustFail("game with a repeated faction is rejected atomically", () => as("
   () => db.query("select log_game('2026-11-06', null, $1::jsonb)", [JSON.stringify(results.map((r, i) => ({ ...r, faction: i < 2 ? "eyrie" : r.faction })))])));
 const gcount = await db.query("select count(*)::int n from games");
 ok(gcount.rows[0].n === 1, "failed game left nothing behind");
+
+// --- Homeland Expansion factions ---------------------------------------------------------
+const homeland = [[p1, "frogs", 1], [p2, "bats", 2], [p3, "knaves", 3], [p4, "marquise", 4]].map(([player_id, faction, placement]) => ({ player_id, faction, placement }));
+await mustWork("a game can use the Homeland factions", () => as("authenticated", who("admin"), () => db.query("select log_game('2026-11-07', null, $1::jsonb)", [JSON.stringify(homeland)])));
+await mustWork("a Homeland faction can be a favorite", () => as("authenticated", who("admin"), () => db.query("update players set favorite_faction='bats' where id=$1", [p1])));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
