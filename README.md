@@ -1,4 +1,4 @@
-# Root League Orlando 🍂
+# Root League Orlando 
 
 A woodland-themed site for organizing live **Root** board game sessions in Orlando: game nights, stats, and a seasonal League Points (LP) leaderboard.
 
