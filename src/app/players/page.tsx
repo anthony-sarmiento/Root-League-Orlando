@@ -22,6 +22,12 @@ export default async function PlayersPage() {
         <p className="mt-1 text-bark-soft">Everyone who&apos;s sat down at the table. Lifetime stats across all seasons.</p>
       </header>
 
+      {profiles.length === 0 && (
+        <p className="card stitched p-6 text-center text-bark-soft">
+          No players have joined yet. Once an organizer adds players, they&apos;ll gather here. 🍄
+        </p>
+      )}
+
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {profiles.map((p) => (
           <li key={p.player.id}>

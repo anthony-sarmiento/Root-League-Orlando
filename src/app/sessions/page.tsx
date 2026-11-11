@@ -43,6 +43,7 @@ export default async function SessionsPage() {
 
       <section>
         <h2 className="mb-3 text-2xl font-bold">Past nights</h2>
+        {past.length === 0 && <p className="card p-5 text-bark-soft">No game nights have been played yet.</p>}
         <ul className="space-y-4">
           {past.map((s) => {
             const sessionGames = games.filter((g) => g.sessionId === s.id);
