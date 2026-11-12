@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Trophy } from "lucide-react";
+import { Perch } from "@/components/Critters";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { LpScale } from "@/components/LpScale";
 import { PageHeader } from "@/components/PageHeader";
@@ -33,7 +34,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
       <PageHeader
         title="Leaderboard"
         pattern="marquise"
-        cards={["throne", "talon", "mole"]}
+        crew={[{ id: "commander-vauquelin", w: 160 }, { id: "duke-whitetalon", w: 180, f: -1 }, { id: "pirate", w: 140, f: -1 }]}
         description="Every game earns league points. When a season ends, the player with the most LP wins the prize pool."
       >
         <SeasonPicker basePath="/leaderboard" seasons={seasons} selected={selected} />
@@ -58,6 +59,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         {rows.length > 0 && (
           <section className="card p-5 sm:p-7 xl:sticky xl:top-6">
+            <Perch id="odilie" w={92} right="2.5rem" />
             <h2 className="mb-6 text-2xl font-bold">The podium</h2>
             <div className="mx-auto max-w-md xl:max-w-none">
               <Podium rows={rows} players={players} />
@@ -75,7 +77,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
         </section>
       </div>
 
-      <section className="card p-5 sm:p-7">
+      <section className="card relative p-5 sm:p-7">
+        <Perch id="constable-henry" w={100} right="3rem" />
         <h2 className="text-2xl font-bold">How league points work</h2>
         <div className="mt-4 grid items-end gap-6 md:grid-cols-2">
           <LpScale />

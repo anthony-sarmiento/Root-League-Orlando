@@ -27,7 +27,7 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
       <PageHeader
         title="Factions"
         pattern="eyrie"
-        cards={["frog", "knave", "key"]}
+        crew={[{ id: "tory", w: 150 }, { id: "envoy", w: 130, f: -1 }, { id: "cenric", w: 160, f: -1 }]}
         description="Current League Faction Winrates"
       >
         <SeasonPicker basePath="/factions" seasons={seasons} selected={selected} includeAll />
@@ -86,7 +86,7 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                           href={`/players/${r.topPlayer.player.id}`}
                           className="inline-flex items-center gap-2 font-semibold hover:text-moss-deep"
                         >
-                          <Avatar name={top.name} avatar={top.avatar} bg={top.avatarBg} size={28} />
+                          <Avatar name={top.name} avatar={top.avatar} bg={top.avatarBg} crop={top.avatarCrop} size={28} />
                           {top.name} <span className="text-sm text-bark-soft">({r.topPlayer.wins})</span>
                         </Link>
                       ) : (

@@ -40,12 +40,12 @@ export default async function SessionsPage() {
       <PageHeader
         title="Game nights"
         pattern="riverfolk"
-        cards={["turn", "setup", "vagabond"]}
+        crew={[{ id: "skipper-audgunn", w: 150 }, { id: "captain-hersilia", w: 160 }, { id: "thief", w: 140, f: -1 }]}
         description="Root League meets every other Sunday at GEEK'D Orlando. Several tables play at once, each seating four, and you can play as many games as the night allows. RSVP ahead so organizers can plan the tables."
       />
 
       <section className="space-y-5">
-        <SectionHeading title="Next game night" />
+        <SectionHeading onDark title="Next game night" />
         {next ? (
           <SessionCard session={next} attendees={attendeesOf(next.id)} state={rsvpStateFor(viewer, next, signups, today)} featured />
         ) : (
@@ -55,7 +55,7 @@ export default async function SessionsPage() {
 
       {later.length > 0 && (
         <section className="space-y-5">
-          <SectionHeading title="Coming up" />
+          <SectionHeading onDark title="Coming up" />
           <ul className="grid gap-5 lg:grid-cols-2">
             {later.map((s) => (
               <li key={s.id}>
@@ -67,15 +67,15 @@ export default async function SessionsPage() {
       )}
 
       <section className="space-y-6">
-        <SectionHeading title="Past nights" description="Who took each table, night by night." />
+        <SectionHeading onDark title="Past nights" description="Who took each table, night by night." />
         {past.length === 0 && <p className="card p-6 text-bark-soft">No game nights have been played yet.</p>}
-        <ol className="relative space-y-4 border-l-2 border-dashed border-bark/25 pl-6 sm:pl-8">
+        <ol className="relative space-y-4 border-l-2 border-dashed border-parchment/30 pl-6 sm:pl-8">
           {past.map((s) => {
             const sessionGames = games.filter((g) => g.sessionId === s.id);
             return (
               <li key={s.id} className="relative">
                 <span
-                  className="absolute top-6 -left-[2.1rem] h-4 w-4 rounded-full border-[3px] border-parchment bg-moss sm:-left-[2.6rem]"
+                  className="absolute top-6 -left-[2.1rem] h-4 w-4 rounded-full border-[3px] border-[#2a2217] bg-honey sm:-left-[2.6rem]"
                   aria-hidden="true"
                 />
                 <details className="card lift-card group">
@@ -94,7 +94,7 @@ export default async function SessionsPage() {
                             const p = w && playerById.get(w.playerId);
                             return p ? (
                               <span key={g.id} className="rounded-full ring-2 ring-paper" title={`${p.name} won`}>
-                                <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} size={36} />
+                                <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} crop={p.avatarCrop} size={36} />
                               </span>
                             ) : null;
                           })}

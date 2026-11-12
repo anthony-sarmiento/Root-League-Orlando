@@ -10,7 +10,7 @@ const LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="band-dark after:hidden mt-16 px-4 pt-12 pb-10 text-center sm:px-8">
+    <footer className="mt-24 px-4 pt-12 pb-12 text-center sm:px-8">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-5">
         <div className="flex items-end justify-center gap-4" aria-hidden="true">
           <Image src="/art/bunny.webp" alt="" width={40} height={40} className="footer-folk" />

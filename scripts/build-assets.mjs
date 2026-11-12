@@ -80,25 +80,6 @@ for (const [id, file] of Object.entries(FACTION_PATTERNS)) {
 
 // ---- Hero art -----------------------------------------------------
 toWebp(find("141.png"), path.join(PUBLIC, "art", "hero.webp"), { maxW: 520, quality: 85 });
-// Card art for the decorative card fans (names are the output ids).
-const CARDS = {
-  throne: "LotH Moods.png",
-  talon: "Eyrie Leader.png",
-  vagabond: "Vagabond Card Back.png",
-  frog: "Frog Back.png",
-  knave: "Knaveback.png",
-  mole: "Ministers.png",
-  quest: "Quest.png",
-  deck: "Base Deck.png",
-  exiles: "Exiles & Partisans Scan.png",
-  melee: "S&D Back.png",
-  turn: "Turn Order.png",
-  setup: "ADSET.png",
-  key: "Faithful Retainer.png",
-};
-for (const [id, file] of Object.entries(CARDS)) {
-  toWebp(find(file), path.join(PUBLIC, "art", "cards", `${id}.webp`), { maxW: 340, maxH: 480, quality: 76 });
-}
 // Tiny woodland-folk icons, used as decorative bullets.
 for (const [id, file] of Object.entries({ bunny: "Bunny_Icon.png", fox: "Fox_Icon.png", mouse: "Mouse_Icon.png" })) {
   toWebp(find(file), path.join(PUBLIC, "art", `${id}.webp`), { maxW: 96, quality: 90 });

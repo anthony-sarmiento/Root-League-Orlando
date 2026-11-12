@@ -1,5 +1,6 @@
 import { MapPin, Users } from "lucide-react";
 import { AttendeeStack } from "@/components/AttendeeStack";
+import { Perch } from "@/components/Critters";
 import { RsvpControl } from "@/components/RsvpControl";
 import { TableSeats } from "@/components/TableSeats";
 import { formatDate } from "@/lib/format";
@@ -32,6 +33,7 @@ export function SessionCard({ session, attendees, state, featured = false }: Pro
 
   return (
     <article className={`card ${featured ? "stitched" : ""} flex gap-5 p-5 sm:p-6`}>
+      {featured && upcoming && <Perch id="squire-dye" w={96} right="2.5rem" />}
       <div
         className={`plaque flex shrink-0 flex-col items-center overflow-hidden rounded-2xl text-center ${featured ? "h-28 w-24" : "h-24 w-[4.75rem]"}`}
         aria-hidden="true"

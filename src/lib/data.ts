@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { FactionId, Game, Placement, Player, Session, Signup } from "./league";
-import { asFactionId } from "./profile";
+import { asFactionId, cropFrom } from "./profile";
 import { sampleData } from "./sample-data";
 import { DEFAULT_SEASONS, makeSeason, sortSeasons, type Season } from "./seasons";
 import { isSupabaseConfigured } from "./supabase/config";
@@ -65,6 +65,9 @@ interface PlayerRow {
   favorite_faction?: string | null;
   avatar?: string | null;
   avatar_bg?: string | null;
+  avatar_x?: number | null;
+  avatar_y?: number | null;
+  avatar_zoom?: number | null;
 }
 
 interface GameRow {
@@ -74,37 +77,36 @@ interface GameRow {
   game_results: { player_id: string; faction: FactionId; placement: Placement }[];
 }
 
+/**
+ * Players with as much profile as the database knows about. Each migration added columns, so try the newest
+ * set first and fall back to older ones; a database that hasn't been migrated at all still returns plain names.
+ */
+async function fetchPlayers(db: ReturnType<typeof createPublicClient>): Promise<PlayerRow[]> {
+  const COLUMNS = [
+    "id, name, bio, favorite_faction, avatar, avatar_bg, avatar_x, avatar_y, avatar_zoom",
+    "id, name, bio, favorite_faction, avatar, avatar_bg",
+    "id, name, bio, favorite_faction, avatar",
+    "id, name",
+  ];
+  for (let i = 0; i < COLUMNS.length; i++) {
+    try {
+      return await fetchAll<PlayerRow>(
+        (from, to) => db.from("players").select(COLUMNS[i]).order("name").range(from, to) as unknown as PageResult<PlayerRow>,
+        "players",
+      );
+    } catch (error) {
+      const missing = MISSING.has((error as { code?: string }).code ?? "");
+      if (!missing || i === COLUMNS.length - 1) throw error;
+    }
+  }
+  return [];
+}
+
 async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
   const db = createPublicClient();
 
   const [players, sessions, games, seasons, signups] = await Promise.all([
-    orFallback(
-      () =>
-        fetchAll<PlayerRow>(
-          (from, to) =>
-            db
-              .from("players")
-              .select("id, name, bio, favorite_faction, avatar, avatar_bg")
-              .order("name")
-              .range(from, to),
-          "players",
-        ),
-      // Avatar backgrounds not migrated yet: profiles without them, and if profiles aren't migrated either, plain names.
-      () =>
-        orFallback(
-          () =>
-            fetchAll<PlayerRow>(
-              (from, to) =>
-                db.from("players").select("id, name, bio, favorite_faction, avatar").order("name").range(from, to),
-              "players",
-            ),
-          () =>
-            fetchAll<PlayerRow>(
-              (from, to) => db.from("players").select("id, name").order("name").range(from, to),
-              "players",
-            ),
-        ),
-    ),
+    fetchPlayers(db),
     fetchAll<{ id: string; date: string; title: string; location: string }>(
       (from, to) => db.from("sessions").select("id, date, title, location").order("date").range(from, to),
       "sessions",
@@ -150,6 +152,7 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
       favoriteFaction: asFactionId(p.favorite_faction),
       avatar: p.avatar ?? undefined,
       avatarBg: asFactionId(p.avatar_bg),
+      avatarCrop: cropFrom(p.avatar_x, p.avatar_y, p.avatar_zoom),
     })),
     sessions,
     games: games.map((g) => ({

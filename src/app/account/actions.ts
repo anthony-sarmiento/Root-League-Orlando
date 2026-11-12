@@ -20,10 +20,22 @@ function readProfile(formData: FormData): ProfileInput {
     favoriteFaction: text(formData, "favoriteFaction"),
     avatar: text(formData, "avatar"),
     avatarBg: text(formData, "avatarBg"),
+    avatarX: text(formData, "avatarX"),
+    avatarY: text(formData, "avatarY"),
+    avatarZoom: text(formData, "avatarZoom"),
   };
 }
 
 const refresh = () => revalidatePath("/", "layout");
+
+const numberOrNull = (value: string) => (value === "" ? null : Number(value));
+function cropColumns(clean: { avatarX: string; avatarY: string; avatarZoom: string }) {
+  return {
+    avatar_x: numberOrNull(clean.avatarX),
+    avatar_y: numberOrNull(clean.avatarY),
+    avatar_zoom: numberOrNull(clean.avatarZoom),
+  };
+}
 
 // Postgres/PostgREST codes for "that column doesn't exist": the avatar-background migration hasn't been run.
 const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
@@ -58,14 +70,11 @@ export async function createProfile(_prev: ProfileState, formData: FormData): Pr
     return { errors: ["Couldn't create your profile. Please try again."] };
   }
 
-  // The background lives in its own column, so it is saved separately: a database that hasn't had the
-  // avatar-background migration yet still creates the profile.
-  if (clean.avatarBg) {
-    await supabase
-      .from("players")
-      .update({ avatar_bg: clean.avatarBg })
-      .eq("id", await myPlayerId(supabase, viewer.userId));
-  }
+  // The background and position live in their own columns, so they are saved separately: a database that hasn't
+  // had those migrations yet still creates the profile.
+  const playerId = await myPlayerId(supabase, viewer.userId);
+  if (clean.avatarBg) await supabase.from("players").update({ avatar_bg: clean.avatarBg }).eq("id", playerId);
+  if (clean.avatarX || clean.avatarY || clean.avatarZoom) await supabase.from("players").update(cropColumns(clean)).eq("id", playerId);
 
   refresh();
   redirect("/account");
@@ -86,14 +95,16 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
     favorite_faction: clean.favoriteFaction || null,
     avatar: clean.avatar || null,
   };
-  let { data, error } = await supabase
-    .from("players")
-    .update({ ...fields, avatar_bg: clean.avatarBg || null })
-    .eq("id", viewer.player.id)
-    .select("id");
+  const save = (extra: object) =>
+    supabase.from("players").update({ ...fields, ...extra }).eq("id", viewer.player!.id).select("id");
+  let { data, error } = await save({ avatar_bg: clean.avatarBg || null, ...cropColumns(clean) });
   if (error && MISSING_COLUMN.has(error.code ?? "")) {
-    // Not migrated yet: save everything except the background.
-    ({ data, error } = await supabase.from("players").update(fields).eq("id", viewer.player.id).select("id"));
+    // Position migration not run yet: save without it.
+    ({ data, error } = await save({ avatar_bg: clean.avatarBg || null }));
+  }
+  if (error && MISSING_COLUMN.has(error.code ?? "")) {
+    // Background migration not run either: save everything else.
+    ({ data, error } = await save({}));
   }
 
   if (error) {

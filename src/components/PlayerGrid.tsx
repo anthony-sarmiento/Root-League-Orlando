@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FactionBadge } from "@/components/FactionBadge";
 import { pct } from "@/lib/format";
-import { getFaction, type FactionId } from "@/lib/league";
+import { getFaction, type AvatarCrop, type FactionId } from "@/lib/league";
 import { getAvatar } from "@/lib/profile";
 
 export interface PlayerCardData {
@@ -16,6 +16,7 @@ export interface PlayerCardData {
   bio?: string;
   avatar?: string;
   avatarBg?: FactionId;
+  avatarCrop?: AvatarCrop;
   games: number;
   wins: number;
   winrate: number;
@@ -62,12 +63,12 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
           <div className="flex items-center -space-x-3" aria-hidden="true">
             {players.slice(0, 10).map((p) => (
               <span key={p.id} className="rounded-full ring-[3px] ring-parchment">
-                <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} size={46} />
+                <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} crop={p.avatarCrop} size={46} />
               </span>
             ))}
           </div>
           <p className="font-display text-xl font-bold">
-            {players.length} {players.length === 1 ? "player" : "players"} in the warband
+            {players.length} {players.length === 1 ? "player" : "players"} in the league
           </p>
         </div>
       )}
@@ -115,7 +116,7 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
           </div>
         )}
 
-        <p className="text-sm text-bark-soft" role="status">
+        <p className="text-sm text-parchment/70" role="status">
           Showing {shown.length} of {players.length}
         </p>
       </div>

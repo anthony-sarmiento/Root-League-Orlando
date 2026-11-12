@@ -28,7 +28,7 @@ export function Podium({ rows, players }: { rows: LeaderboardRow[]; players: Pla
         const player = byId.get(row.player.id) ?? row.player;
         return (
           <li key={row.player.id} className="flex flex-col items-center text-center">
-            <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} size={step.avatar} />
+            <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} crop={player.avatarCrop} size={step.avatar} />
             <Link
               href={`/players/${row.player.id}`}
               className="mt-2 max-w-full truncate font-display text-base font-bold hover:text-moss-deep sm:text-lg"

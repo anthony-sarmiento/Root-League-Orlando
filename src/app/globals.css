@@ -41,15 +41,16 @@ html {
   scrollbar-width: thin;
 }
 
+/* One continuous canvas: forest at the top, down through earth into scorched red, with a fine speckle. Every
+   page is painted on it; paper cards and dark glass float above. */
+html { background-color: #241410; }
 body {
-  background-color: var(--color-parchment);
-  /* faint speckle, like old paper */
+  background-color: transparent;
   background-image:
-    radial-gradient(rgba(75, 52, 38, 0.07) 1px, transparent 1.5px),
-    radial-gradient(rgba(95, 125, 59, 0.06) 1px, transparent 1.5px);
-  background-size: 24px 24px, 37px 37px;
-  background-position: 0 0, 11px 13px;
-  color: var(--color-bark);
+    radial-gradient(rgba(247, 239, 220, 0.05) 1px, transparent 1.5px),
+    linear-gradient(180deg, #30502a 0, #1f3319 18%, #2a2217 46%, #2e1a13 76%, #241410 100%);
+  background-size: 26px 26px, 100% 100%;
+  color: var(--color-parchment);
   font-family: var(--font-sans), system-ui, sans-serif;
   caret-color: var(--color-acorn);
   text-rendering: optimizeLegibility;
@@ -83,6 +84,7 @@ p { text-wrap: pretty; }
 
 .card {
   position: relative;
+  color: var(--color-bark);
   background: var(--color-paper);
   border: 1.5px solid rgba(75, 52, 38, 0.16);
   border-radius: 1.25rem;
@@ -169,6 +171,7 @@ a.card:hover, .card.interactive:hover {
 /* -------------------------------------------------------------------- Chips */
 
 .chip {
+  color: var(--color-bark);
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -316,14 +319,12 @@ textarea.field { min-height: 6rem; resize: vertical; }
 @media (min-width: 640px) { .shell { padding-inline: 2rem; } }
 .bleed { width: 100vw; margin-left: calc(50% - 50vw); }
 
-/* A dark forest banner with a faction pattern showing through. Used for the hero and every page header. */
+/* Page headers sit straight on the canvas: a faction pattern fades in behind them and melts into the page below. */
 .banner {
   position: relative;
   isolation: isolate;
   color: var(--color-parchment);
-  background:
-    radial-gradient(90% 120% at 88% 0%, rgba(226, 176, 74, 0.22), transparent 60%),
-    linear-gradient(180deg, #34502b 0%, var(--color-forest-deep) 100%);
+  background: radial-gradient(80% 110% at 88% 0%, rgba(226, 176, 74, 0.2), transparent 62%);
 }
 .banner::before {
   content: "";
@@ -333,22 +334,11 @@ textarea.field { min-height: 6rem; resize: vertical; }
   background-image: var(--pattern);
   background-size: 520px auto;
   background-position: center;
-  opacity: 0.3;
-  -webkit-mask-image: linear-gradient(95deg, transparent 5%, #000 85%);
-  mask-image: linear-gradient(95deg, transparent 5%, #000 85%);
-}
-/* Hanging scalloped edge, like bunting, so the band doesn't end in a flat line. */
-.banner::after,
-.band-dark::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 14px;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(circle at 14px 0, var(--edge, var(--color-forest-deep)) 13px, transparent 13.5px) 0 0 / 28px 14px repeat-x;
+  opacity: 0.34;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%), linear-gradient(95deg, transparent 5%, #000 85%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%), linear-gradient(95deg, transparent 5%, #000 85%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 .banner .chip { background: rgba(247, 239, 220, 0.14); border-color: rgba(247, 239, 220, 0.35); color: var(--color-parchment); }
 .banner a.chip:hover { background: rgba(247, 239, 220, 0.26); }
@@ -360,25 +350,24 @@ textarea.field { min-height: 6rem; resize: vertical; }
 .banner a.chip.active:hover, .banner a.chip[aria-current="true"]:hover { background: #ebbc58; }
 .banner .btn.secondary { background: linear-gradient(#f7efdc, #e9d7ae); }
 
-.band-dark {
-  position: relative;
-  isolation: isolate;
-  --edge: var(--color-night);
-  color: var(--color-parchment);
-  background:
-    radial-gradient(70% 90% at 15% 0%, rgba(95, 125, 59, 0.28), transparent 65%),
-    linear-gradient(180deg, #3a2819 0%, var(--color-night) 100%);
-}
-.band-dark::before {
+/* A soft pool of light behind a stretch of the page, no hard edges. */
+.glow { position: relative; isolation: isolate; }
+.glow::before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: -4rem;
+  bottom: -4rem;
+  width: 100vw;
+  transform: translateX(-50%);
   z-index: -1;
-  background-image: radial-gradient(rgba(247, 239, 220, 0.08) 1px, transparent 1.5px);
-  background-size: 22px 22px;
+  pointer-events: none;
+  background: var(--glow, radial-gradient(60% 60% at 50% 50%, rgba(95, 125, 59, 0.28), transparent 70%));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 72%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 72%, transparent);
 }
 
-/* Faction tile: the faction's own pattern, a dark wash for legibility, and its icon. */
+/* Faction tile. The box is one layer; the faction's critter hides behind it and pops out over the top edge on hover. */
 .faction-tile {
   position: relative;
   isolation: isolate;
@@ -386,27 +375,56 @@ textarea.field { min-height: 6rem; resize: vertical; }
   min-height: 11rem;
   flex-direction: column;
   justify-content: flex-end;
-  overflow: hidden;
   border-radius: 1.25rem;
-  border: 2px solid rgba(247, 239, 220, 0.18);
-  background: var(--tint, #444) var(--pattern) center / 300px auto;
   padding: 1rem;
   color: var(--color-parchment);
-  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, 0.7);
-  transition: transform 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out);
+  transition: transform 0.3s var(--ease-out), rotate 0.3s var(--ease-out);
 }
-.faction-tile::before {
+.faction-tile > :not(.tile-bg):not(.tile-critter) { position: relative; z-index: 1; }
+.tile-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  border: 2px solid rgba(247, 239, 220, 0.2);
+  background: var(--tint, #444) var(--pattern) 0 0 / 300px auto;
+  box-shadow: 0 14px 28px -16px rgba(0, 0, 0, 0.7);
+  transition: border-color 0.2s, box-shadow 0.3s var(--ease-out), background-position 0.9s var(--ease-out);
+}
+.tile-bg::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
   background: linear-gradient(to top, rgba(22, 15, 9, 0.94) 32%, rgba(22, 15, 9, 0.4) 100%);
 }
-.faction-tile:hover {
-  transform: translateY(-4px);
+.faction-tile:hover { transform: translateY(-4px); }
+.faction-tile:hover .tile-bg, .faction-tile:focus-visible .tile-bg {
   border-color: var(--tint, #f2c868);
   box-shadow: 0 22px 36px -16px rgba(0, 0, 0, 0.85);
+  background-position: 60px 40px;
 }
+.tile-critter {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 38%;
+  z-index: -1;
+  width: 6.75rem;
+  pointer-events: none;
+  transform: translateY(52%) rotate(var(--r, 0deg)) scale(0.9);
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.faction-tile:hover .tile-critter, .faction-tile:focus-visible .tile-critter {
+  transform: translateY(-27%) rotate(var(--r, 0deg)) scale(1.06);
+}
+.faction-tile .faction-icon { transition: transform 0.35s var(--ease-out); }
+.faction-tile:hover .faction-icon { transform: scale(1.12) rotate(-6deg); }
+/* Tiles lean at their own angles, like a pile of dispatches, and straighten when you reach for one. */
+.tilt-tiles > li { position: relative; }
+.tilt-tiles > li:hover { z-index: 5; }
+.tilt-tiles > li:nth-child(odd) .faction-tile { rotate: -1deg; }
+.tilt-tiles > li:nth-child(even) .faction-tile { rotate: 1.1deg; }
+.tilt-tiles .faction-tile:hover { rotate: 0deg; }
 
 /* A fixed-width date plaque, like a wax-sealed invitation. */
 .plaque {
@@ -418,9 +436,6 @@ textarea.field { min-height: 6rem; resize: vertical; }
 /* Section titles get a small leafy rule underneath. */
 .leaf-rule { display: block; color: var(--color-moss); }
 
-@media (prefers-reduced-motion: reduce) {
-  .faction-tile { transition: none; }
-}
 
 /* Keep the pattern calm behind full-width text on phones. */
 @media (max-width: 767px) {
@@ -465,12 +480,6 @@ textarea.field { min-height: 6rem; resize: vertical; }
 /* Seats at a table pop in one after another when the card first shows. */
 .seat { animation: seat-pop 0.45s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms + 200ms); }
 
-/* A faction tile wakes up on hover: the icon turns, the pattern drifts. */
-.faction-tile { background-position: 0 0; transition: transform 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out), background-position 0.9s var(--ease-out); }
-.faction-tile:hover { background-position: 60px 40px; }
-.faction-tile .faction-icon { transition: transform 0.35s var(--ease-out); }
-.faction-tile:hover .faction-icon { transform: scale(1.12) rotate(-6deg); }
-
 /* Link cards: the portrait leans in, the name's underline draws. */
 .lift-card { transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out); }
 .lift-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
@@ -491,7 +500,7 @@ textarea.field { min-height: 6rem; resize: vertical; }
 
 /* Segmented sorter on the players page. */
 .seg { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; border-radius: 999px; background: var(--color-parchment-deep); border: 1.5px solid rgba(75, 52, 38, 0.2); padding: 0.2rem; }
-.seg button { border-radius: 999px; padding: 0.3rem 0.85rem; min-height: 2.25rem; font-size: 0.875rem; font-weight: 700; transition: background 0.2s, color 0.2s; cursor: pointer; }
+.seg button { color: var(--color-bark); border-radius: 999px; padding: 0.3rem 0.85rem; min-height: 2.25rem; font-size: 0.875rem; font-weight: 700; transition: background 0.2s, color 0.2s; cursor: pointer; }
 .seg button:hover { background: rgba(75, 52, 38, 0.1); }
 .seg button[aria-pressed="true"] { background: #4b6a2c; color: #fffaf0; }
 
@@ -544,74 +553,52 @@ textarea.field { min-height: 6rem; resize: vertical; }
   animation: ember-rise var(--d) linear var(--delay) infinite;
 }
 
-/* A war-room band: scorched red-brown, lit from below. */
-.band-war {
-  position: relative;
-  isolation: isolate;
-  --edge: #24100d;
-  color: var(--color-parchment);
-  background:
-    radial-gradient(70% 90% at 78% 110%, rgba(240, 140, 50, 0.45), transparent 65%),
-    radial-gradient(50% 60% at 8% 0%, rgba(181, 68, 58, 0.35), transparent 70%),
-    linear-gradient(180deg, #3b1a14 0%, #24100d 100%);
+/* The brawl: critters from both sides piling into one another around a clash of dust and stars. */
+@keyframes scuffle {
+  from { transform: translate(-7px, 2px) rotate(-3deg); }
+  to { transform: translate(9px, -16px) rotate(4deg); }
 }
-.band-war::after {
-  content: "";
+@keyframes clash { from { transform: scale(0.94) rotate(-4deg); } to { transform: scale(1.1) rotate(5deg); } }
+@keyframes puff { from { transform: scale(0.9); opacity: 0.55; } to { transform: scale(1.12); opacity: 0.85; } }
+.brawl { position: relative; height: 25rem; }
+@media (min-width: 768px) { .brawl { height: 33rem; } }
+.fighter {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 14px;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(circle at 14px 0, var(--edge) 13px, transparent 13.5px) 0 0 / 28px 14px repeat-x;
-}
-
-/* A hand of cards, fanned out. Hover the hand and it spreads; hover a card and it jumps. */
-@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-.fan {
-  --spread: 1;
-  --step: 8deg;
-  --gap: 44px;
-  --w: 150px;
-  position: relative;
-  height: calc(var(--w) * 1.55);
-  width: 100%;
-  max-width: calc(var(--w) * 4.2);
-  margin-inline: auto;
-}
-.fan:hover { --spread: 1.35; }
-.fan-card {
-  --o: calc(var(--i) - (var(--n) - 1) / 2);
-  position: absolute;
-  left: 50%;
-  bottom: 0;
+  left: var(--x);
+  bottom: var(--b);
   width: var(--w);
-  margin-left: calc(var(--w) / -2);
-  transform-origin: 50% 120%;
-  transform: translateX(calc(var(--o) * var(--gap) * var(--spread))) translateY(calc(var(--o) * var(--o) * 7px))
-    rotate(calc(var(--o) * var(--step) * var(--spread)));
-  transition: transform 0.55s var(--ease-out);
-  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.45));
-  z-index: var(--z, 0);
+  z-index: var(--z, 1);
+  transform: translateX(-50%) scaleX(var(--f, 1)) rotate(var(--r, 0deg));
+  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.5));
 }
-.fan-card:hover {
-  z-index: 20;
-  transform: translateX(calc(var(--o) * var(--gap) * var(--spread))) translateY(-30px) rotate(calc(var(--o) * var(--step) * 0.4));
+.fighter > span { display: block; transform-origin: 50% 90%; animation: scuffle var(--d, 2.4s) ease-in-out var(--delay, 0s) infinite alternate; }
+.fighter img { display: block; width: 100%; height: auto; }
+.clash { position: absolute; left: 50%; bottom: 22%; width: min(22rem, 60%); z-index: 2; margin-left: calc(min(22rem, 60%) / -2); animation: clash 0.9s ease-in-out infinite alternate; }
+.puff {
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 244, 222, 0.9), rgba(214, 190, 150, 0.55) 55%, rgba(214, 190, 150, 0) 72%);
+  filter: blur(3px);
+  animation: puff 1.6s ease-in-out var(--delay, 0s) infinite alternate;
 }
-.fan.alive .fan-card > span { display: block; animation: bob 4.5s ease-in-out calc(var(--i) * -0.7s) infinite alternate; }
-.fan-card img { display: block; width: 100%; height: auto; }
-.fan.sm { --w: 112px; --gap: 34px; --step: 9deg; }
-.fan.lg { --w: 120px; --gap: 36px; --step: 7deg; }
-@media (min-width: 640px) { .fan.lg { --w: 140px; --gap: 44px; } }
-@media (min-width: 1280px) { .fan.lg { --w: 176px; --gap: 54px; } }
+@media (max-width: 767px) {
+  .fighter.desktop-only { display: none; }
+  .fighter { width: calc(var(--w) * 0.66); }
+  .brawl { height: 21rem; }
+}
 
-/* Faction tiles lean at their own angles, like a pile of dispatches, and straighten when you reach for one. */
-.tilt-tiles > li:nth-child(odd) .faction-tile { rotate: -1.1deg; }
-.tilt-tiles > li:nth-child(even) .faction-tile { rotate: 1.2deg; }
-.tilt-tiles > li:nth-child(3n) { margin-top: 0.75rem; }
-.tilt-tiles .faction-tile { transition: transform 0.3s var(--ease-out), rotate 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out), background-position 0.9s var(--ease-out); }
-.tilt-tiles .faction-tile:hover { rotate: 0deg; }
+/* A critter perched on the top edge of a card, watching the page. */
+.perch { position: absolute; z-index: 3; pointer-events: none; transform: translateY(-86%); filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35)); }
+.perch img { display: block; width: 100%; height: auto; }
+
+/* The standing crew in a page header. */
+.crew { position: absolute; right: 2rem; bottom: -0.25rem; display: none; align-items: flex-end; }
+@media (min-width: 1024px) { .crew { display: flex; } }
+.crew > span { display: block; margin-left: -1.75rem; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.45)); transition: transform 0.4s var(--ease-out); transform: scaleX(var(--f, 1)); }
+.crew > span:first-child { margin-left: 0; }
+.crew > span:hover { transform: scaleX(var(--f, 1)) translateY(-14px) rotate(-3deg); }
+.crew img { display: block; width: 100%; height: auto; }
 
 /* Trading-card style player cards. */
 .trade-card {
@@ -676,8 +663,11 @@ textarea.field { min-height: 6rem; resize: vertical; }
 
 @media (prefers-reduced-motion: reduce) {
   .ember { display: none; }
-  .fan-card, .fan-card:hover, .trade-card, .trade-card:hover, .trade-card .portrait, .tilt-tiles .faction-tile { transition: none; }
-  .fan.alive .fan-card > span { animation: none; }
+  .trade-card, .trade-card:hover, .trade-card .portrait, .tilt-tiles .faction-tile, .tile-critter, .crew > span { transition: none; }
+  .fighter > span, .clash, .puff { animation: none; }
   .trade-card::after { display: none; }
   .trade-card:hover .portrait { transform: none; }
 }
+
+/* Embers inside a glow section drift across the whole width of the page. */
+.glow > .embers { left: 50%; right: auto; width: 100vw; transform: translateX(-50%); }

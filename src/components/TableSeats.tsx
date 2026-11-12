@@ -54,7 +54,7 @@ function Table({ seats, number, offset = 0 }: { seats: Player[]; number: number;
       <div className="flex items-center gap-2" aria-hidden="true">
         {seats.map((p, i) => (
           <span key={p.id} className="seat" style={{ "--i": offset + i } as CSSProperties}>
-            <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} size={44} />
+            <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} crop={p.avatarCrop} size={44} />
           </span>
         ))}
         {Array.from({ length: open }, (_, i) => (

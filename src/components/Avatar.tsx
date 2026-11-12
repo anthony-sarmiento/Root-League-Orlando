@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getFaction, type FactionId } from "@/lib/league";
-import { getAvatar } from "@/lib/profile";
+import type { AvatarCrop } from "@/lib/league";
+import { cropStyle, getAvatar } from "@/lib/profile";
 
 const FALLBACK_COLORS = ["#5f7d3b", "#c9772f", "#3d8a8c", "#b5443a", "#8a6a2f", "#6a4c93"];
 
@@ -15,6 +16,8 @@ interface Props {
   avatar?: string;
   /** The faction whose pattern sits behind the portrait. */
   bg?: FactionId;
+  /** Where the character sits in the circle; a flattering default when not set. */
+  crop?: AvatarCrop;
   size?: number;
   className?: string;
 }
@@ -35,7 +38,7 @@ export function avatarBackground(bg?: FactionId): { backgroundImage: string; bac
  * A player's chosen character, cropped in close like a profile picture, on their chosen faction background.
  * With no art it shows their initial. Decorative: the name always sits beside it.
  */
-export function Avatar({ name, avatar, bg, size = 44, className = "" }: Props) {
+export function Avatar({ name, avatar, bg, crop, size = 44, className = "" }: Props) {
   const art = getAvatar(avatar);
   const look = avatarBackground(bg);
   const style = {
@@ -60,7 +63,8 @@ export function Avatar({ name, avatar, bg, size = 44, className = "" }: Props) {
           alt=""
           width={Math.max(size * 2, 128)}
           height={Math.max(size * 2, 128)}
-          className="h-full w-full scale-[1.55] object-cover object-[50%_10%] [transform-origin:50%_26%]"
+          className="h-full w-full object-cover"
+          style={cropStyle(crop)}
         />
       </span>
     );

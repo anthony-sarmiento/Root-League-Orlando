@@ -17,6 +17,7 @@ export default async function PlayersPage() {
       bio: p.bio,
       avatar: p.avatar,
       avatarBg: p.avatarBg,
+      avatarCrop: p.avatarCrop,
       games: profile.games,
       wins: profile.wins,
       winrate: profile.winrate,
@@ -31,7 +32,7 @@ export default async function PlayersPage() {
       <PageHeader
         title="Players"
         pattern="lizards"
-        cards={["deck", "exiles", "quest", "melee"]}
+        crew={[{ id: "sergeant-atheldrydd", w: 130 }, { id: "camdyn", w: 150 }, { id: "captain-ismay", w: 140, f: -1 }, { id: "odilie", w: 130, f: -1 }]}
         description="Everyone who has sat down at the table. Records cover every season."
       />
       <PlayerGrid players={cards} />

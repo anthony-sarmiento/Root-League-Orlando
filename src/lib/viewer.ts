@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Player } from "./league";
-import { asFactionId } from "./profile";
+import { asFactionId, cropFrom } from "./profile";
 import { isSupabaseConfigured } from "./supabase/config";
 import { createServerSupabase } from "./supabase/server";
 
@@ -26,6 +26,9 @@ interface PlayerJoin {
   favorite_faction: string | null;
   avatar: string | null;
   avatar_bg?: string | null;
+  avatar_x?: number | null;
+  avatar_y?: number | null;
+  avatar_zoom?: number | null;
 }
 
 // Supabase returns a joined row as an object or a one-item array depending on the relation.
@@ -45,18 +48,18 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!user) return null;
 
   const readLink = async () => {
-    const full = await supabase
-      .from("player_accounts")
-      .select("players(id, name, bio, favorite_faction, avatar, avatar_bg)")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!full.error) return full;
-    // The avatar-background migration may not have been run yet: ask again without that column.
-    return supabase
-      .from("player_accounts")
-      .select("players(id, name, bio, favorite_faction, avatar)")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Each migration added profile columns: ask for the newest set and step back until the database accepts one.
+    const COLUMNS = [
+      "id, name, bio, favorite_faction, avatar, avatar_bg, avatar_x, avatar_y, avatar_zoom",
+      "id, name, bio, favorite_faction, avatar, avatar_bg",
+      "id, name, bio, favorite_faction, avatar",
+    ];
+    let result;
+    for (const columns of COLUMNS) {
+      result = await supabase.from("player_accounts").select(`players(${columns})`).eq("user_id", user.id).maybeSingle();
+      if (!result.error) break;
+    }
+    return result!;
   };
 
   const [link, admin, claim] = await Promise.all([
@@ -66,7 +69,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   ]);
 
   // Errors here (e.g. the accounts migration hasn't been run yet) just mean "no profile".
-  const profile = one(link.data?.players as PlayerJoin | PlayerJoin[] | null | undefined);
+  const profile = one((link.data as { players?: PlayerJoin | PlayerJoin[] | null } | null)?.players);
   const claimPlayer = one(claim.data?.players as { name: string } | { name: string }[] | null | undefined);
 
   return {
@@ -81,6 +84,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
           favoriteFaction: asFactionId(profile.favorite_faction),
           avatar: profile.avatar ?? undefined,
           avatarBg: asFactionId(profile.avatar_bg),
+          avatarCrop: cropFrom(profile.avatar_x, profile.avatar_y, profile.avatar_zoom),
         }
       : null,
     claim: claim.data

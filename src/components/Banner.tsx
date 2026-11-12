@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Embers } from "@/components/CardFan";
+import { Embers } from "@/components/Critters";
 import { getFaction, type FactionId } from "@/lib/league";
 
 interface Props {

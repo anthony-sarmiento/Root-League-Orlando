@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { AVATARS } from "./avatars.generated";
-import { validateProfile } from "./profile";
+import { DEFAULT_CROP, cropFrom, validateProfile } from "./profile";
 import { validateSeasonInput } from "./season-input";
 
-const base = { name: "Bramble", bio: "", favoriteFaction: "", avatar: "", avatarBg: "" };
+const base = { name: "Bramble", bio: "", favoriteFaction: "", avatar: "", avatarBg: "", avatarX: "", avatarY: "", avatarZoom: "" };
 
 describe("validateProfile", () => {
   it("accepts a minimal profile and trims whitespace", () => {
@@ -31,6 +31,18 @@ describe("validateProfile", () => {
   it("only allows real factions as an avatar background", () => {
     expect(validateProfile({ ...base, avatarBg: "frogs" }).errors).toEqual([]);
     expect(validateProfile({ ...base, avatarBg: "dragons" }).errors).toContain("Pick a background from the list.");
+  });
+
+  it("accepts a moved portrait and rejects impossible positions", () => {
+    expect(validateProfile({ ...base, avatarX: "40", avatarY: "20", avatarZoom: "220" }).errors).toEqual([]);
+    expect(validateProfile({ ...base, avatarX: "140" }).errors.length).toBe(1);
+    expect(validateProfile({ ...base, avatarZoom: "50" }).errors.length).toBe(1);
+    expect(validateProfile({ ...base, avatarY: "abc" }).errors.length).toBe(1);
+  });
+
+  it("builds a crop from database values", () => {
+    expect(cropFrom(null, null, null)).toBeUndefined();
+    expect(cropFrom(10, null, 999)).toEqual({ x: 10, y: DEFAULT_CROP.y, zoom: 300 });
   });
 
   it("ships a healthy avatar set with unique ids", () => {

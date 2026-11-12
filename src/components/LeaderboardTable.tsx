@@ -67,7 +67,7 @@ export function LeaderboardTable({ rows, players, compact = false, emptyMessage,
                     href={`/players/${r.player.id}`}
                     className="flex items-center gap-2.5 font-bold hover:text-moss-deep sm:gap-3"
                   >
-                    <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} size={40} />
+                    <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} crop={player.avatarCrop} size={40} />
                     <span className="truncate underline decoration-leaf decoration-2 underline-offset-4">{r.player.name}</span>
                   </Link>
                 </td>

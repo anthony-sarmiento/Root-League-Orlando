@@ -41,7 +41,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
             <ArrowLeft size={18} aria-hidden="true" /> All players
           </Link>
           <div className="mt-5 flex flex-wrap items-center gap-6">
-            <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} size={152} className="shadow-[0_14px_26px_-8px_rgba(0,0,0,0.6)] ring-4 ring-honey/70" />
+            <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} crop={player.avatarCrop} size={152} className="shadow-[0_14px_26px_-8px_rgba(0,0,0,0.6)] ring-4 ring-honey/70" />
             <div className="min-w-0 flex-1 space-y-3">
               <h1 className="text-5xl font-bold sm:text-6xl">{player.name}</h1>
               {player.bio && <p className="max-w-[55ch] text-lg text-parchment/90">{player.bio}</p>}

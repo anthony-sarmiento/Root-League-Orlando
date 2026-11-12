@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -145,6 +145,14 @@ ok(bgSet.affectedRows === 1, "a player can set their own avatar background");
 await mustFail("an unknown avatar background is rejected", () => as("authenticated", who("b"), () => db.query("update players set avatar_bg='dragons' where id=$1", [bPlayer])));
 const bgOther = await as("authenticated", who("c"), () => db.query("update players set avatar_bg='bats' where id=$1", [bPlayer]));
 ok(bgOther.affectedRows === 0, "nobody else can change it");
+
+// --- Avatar position --------------------------------------------------------------------
+const posSet = await as("authenticated", who("b"), () => db.query("update players set avatar_x=40, avatar_y=25, avatar_zoom=220 where id=$1", [bPlayer]));
+ok(posSet.affectedRows === 1, "a player can position their own portrait");
+await mustFail("zoom below 100 is rejected", () => as("authenticated", who("b"), () => db.query("update players set avatar_zoom=50 where id=$1", [bPlayer])));
+await mustFail("position past 100 is rejected", () => as("authenticated", who("b"), () => db.query("update players set avatar_x=140 where id=$1", [bPlayer])));
+const posOther = await as("authenticated", who("c"), () => db.query("update players set avatar_x=10 where id=$1", [bPlayer]));
+ok(posOther.affectedRows === 0, "nobody else can move it");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

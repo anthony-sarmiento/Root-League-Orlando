@@ -19,7 +19,7 @@ export function AttendeeStack({ players, max = 6 }: { players: Player[]; max?: n
             key={p.id}
             name={p.name}
             avatar={p.avatar}
-            bg={p.avatarBg}
+            bg={p.avatarBg} crop={p.avatarCrop}
             size={36}
             className={`${i > 0 ? "-ml-2" : ""} ring-2 ring-paper`}
           />

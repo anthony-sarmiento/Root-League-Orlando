@@ -87,6 +87,14 @@ export function getFaction(id: FactionId): Faction {
 
 // ---- Core data types ------------------------------------------------------
 
+/** Where the portrait is centred and how far in it is zoomed. x and y are 0-100 (percent of the portrait). */
+export interface AvatarCrop {
+  x: number;
+  y: number;
+  /** Percent: 100 is fitted, 300 is three times closer. */
+  zoom: number;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -97,6 +105,8 @@ export interface Player {
   avatar?: string;
   /** Faction whose pattern is drawn behind the avatar. */
   avatarBg?: FactionId;
+  /** How the character sits in the round picture. */
+  avatarCrop?: AvatarCrop;
 }
 
 /** A player RSVP for a game night. */

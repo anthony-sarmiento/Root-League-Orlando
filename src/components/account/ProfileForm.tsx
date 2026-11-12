@@ -71,7 +71,7 @@ export function ProfileForm({ mode, initial }: Props) {
         </span>
       </label>
 
-      <AvatarPicker name={name} defaultAvatar={initial?.avatar ?? ""} defaultBg={initial?.avatarBg} />
+      <AvatarPicker name={name} defaultAvatar={initial?.avatar ?? ""} defaultBg={initial?.avatarBg} defaultCrop={initial?.avatarCrop} />
 
       <FormMessages state={state} />
       <button type="submit" disabled={pending} className="btn">
