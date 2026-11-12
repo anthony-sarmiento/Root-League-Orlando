@@ -560,13 +560,25 @@ textarea.field { min-height: 6rem; resize: vertical; }
   animation: ember-rise var(--d) linear var(--delay) infinite;
 }
 
-/* One wide piece of art, drawn as a single static SVG so it scales as a unit; its ends melt into the page. */
-.panorama {
-  display: block;
-  width: 100%;
-  height: auto;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+/* One wide piece of art. Its edges fade into the page on every side. */
+.banner-art {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* The source image has a printed title in its top-left corner; the page's own colour dissolves over it. */
+.banner-art-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 58%;
+  height: 62%;
+  background: radial-gradient(ellipse 100% 100% at 0% 0%, #2b2016 54%, rgba(43, 32, 22, 0.55) 78%, rgba(43, 32, 22, 0) 100%);
+  pointer-events: none;
 }
 
 /* A critter perched on the top edge of a card, watching the page. */

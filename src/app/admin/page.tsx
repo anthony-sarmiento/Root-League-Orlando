@@ -3,6 +3,7 @@ import { AddPlayerForm, AddSessionForm, DeleteGameForm } from "@/components/admi
 import { ClaimActions, SeasonForm } from "@/components/admin/SeasonAndClaimForms";
 import { PageHeader } from "@/components/PageHeader";
 import { LogGameForm } from "@/components/admin/LogGameForm";
+import { PlayerManager } from "@/components/admin/PlayerManager";
 import { signOut } from "@/app/login/actions";
 import { getAdminContext } from "@/lib/admin";
 import { getLeagueData } from "@/lib/data";
@@ -58,6 +59,9 @@ export default async function AdminPage() {
     const name = Array.isArray(joined) ? joined[0]?.name : joined?.name;
     return { userId: c.user_id as string, email: c.claimant_email as string, note: c.note as string | null, playerName: name ?? "Unknown" };
   });
+  const gamesByPlayer = new Map<string, number>();
+  for (const g of games) for (const r of g.results) gamesByPlayer.set(r.playerId, (gamesByPlayer.get(r.playerId) ?? 0) + 1);
+  const managedPlayers = players.map((p) => ({ id: p.id, name: p.name, games: gamesByPlayer.get(p.id) ?? 0 }));
   const nextSeasonNumber = Math.max(0, ...seasons.map((x) => x.number)) + 1;
   const playerName = new Map(players.map((p) => [p.id, p.name]));
   const recent = [...games]
@@ -114,6 +118,15 @@ export default async function AdminPage() {
           <AddSessionForm today={today} />
         </section>
       </div>
+
+      <section className="card p-5">
+        <h2 className="mb-1 text-2xl font-bold">Players</h2>
+        <p className="mb-4 text-bark-soft">
+          Fix a name or remove someone who joined by mistake. A player with games on record can be renamed, but to remove
+          them delete their games first (under Recent games).
+        </p>
+        <PlayerManager players={managedPlayers} />
+      </section>
 
       <section className="card p-5">
         <h2 className="mb-1 text-2xl font-bold">Seasons</h2>

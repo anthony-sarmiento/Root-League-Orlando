@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminForAction } from "@/lib/admin";
+import { cleanPlayerName } from "@/lib/player-name";
 import { validateGameInput, type GameInput } from "@/lib/game-input";
 import { PLACEMENTS, type FactionId } from "@/lib/league";
 import { validateSeasonInput } from "@/lib/season-input";
@@ -68,16 +69,71 @@ export async function addPlayer(_prev: FormState, formData: FormData): Promise<F
   const admin = await requireAdminForAction();
   if (!admin) return NOT_ADMIN;
 
-  const name = text(formData, "name");
-  if (!name) return { errors: ["Enter a player name."] };
-  if (name.length > 40) return { errors: ["Keep names under 40 characters."] };
+  const { name, error: nameError } = cleanPlayerName(text(formData, "name"));
+  if (nameError) return { errors: [nameError] };
 
   const { error } = await admin.supabase.from("players").insert({ name });
-  if (error) {
-    return { errors: [error.code === "23505" ? `"${name}" is already in the league.` : "Couldn't add that player."] };
-  }
+  if (error) return { errors: [playerWriteError(error.code, name, "add")] };
   refresh();
   return { ok: `${name} joined the league.` };
+}
+
+/** Turns a database error from a player write into something an organizer can act on. */
+function playerWriteError(code: string | undefined, name: string, verb: "add" | "rename"): string {
+  if (code === "23505") return `"${name}" is already in the league (names can't match another player, even in different capitals).`;
+  if (code === "23514") return "That name has characters the league doesn't allow. Use letters, numbers, spaces and . ' _ - only.";
+  return `Couldn't ${verb} that player.`;
+}
+
+/** Organizers can fix a player's name, for example a typo or a nickname change. History stays attached. */
+export async function renamePlayer(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const id = text(formData, "playerId");
+  if (!id) return { errors: ["Pick a player to rename."] };
+  const { name, error: nameError } = cleanPlayerName(text(formData, "name"));
+  if (nameError) return { errors: [nameError] };
+
+  const { data, error } = await admin.supabase.from("players").update({ name }).eq("id", id).select("id");
+  if (error) return { errors: [playerWriteError(error.code, name, "rename")] };
+  if (!data || data.length === 0) return { errors: ["That player no longer exists."] };
+  refresh();
+  return { ok: `Renamed to ${name}.` };
+}
+
+/**
+ * Removes a player who has no games on record. A player with games can't be removed, because every game needs
+ * exactly four players: delete their games first (under Recent games) and then remove them.
+ */
+export async function deletePlayer(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const id = text(formData, "playerId");
+  if (!id) return { errors: ["Pick a player to remove."] };
+
+  const { count, error: countError } = await admin.supabase
+    .from("game_results")
+    .select("id", { count: "exact", head: true })
+    .eq("player_id", id);
+  if (countError) return { errors: ["Couldn't check that player's games. Try again."] };
+  if ((count ?? 0) > 0) {
+    return {
+      errors: [
+        `They have ${count} ${count === 1 ? "game" : "games"} on record. Delete ${count === 1 ? "that game" : "those games"} under Recent games first, then remove the player.`,
+      ],
+    };
+  }
+
+  const { data, error } = await admin.supabase.from("players").delete().eq("id", id).select("id");
+  if (error) {
+    console.error("[delete-player] failed:", error.code, error.message);
+    return { errors: ["Couldn't remove that player."] };
+  }
+  if (!data || data.length === 0) return { errors: ["That player was already removed."] };
+  refresh();
+  return { ok: "Player removed." };
 }
 
 export async function addSession(_prev: FormState, formData: FormData): Promise<FormState> {

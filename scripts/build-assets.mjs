@@ -80,6 +80,8 @@ for (const [id, file] of Object.entries(FACTION_PATTERNS)) {
 
 // ---- Hero art -----------------------------------------------------
 toWebp(find("141.png"), path.join(PUBLIC, "art", "hero.webp"), { maxW: 520, quality: 85 });
+// Wide banner art for the home page (the logo in its corner is covered by the page, never shown).
+toWebp(find("root-banner (1).webp"), path.join(PUBLIC, "art", "banner.webp"), { maxW: 1900, quality: 82 });
 // Tiny woodland-folk icons, used as decorative bullets.
 for (const [id, file] of Object.entries({ bunny: "Bunny_Icon.png", fox: "Fox_Icon.png", mouse: "Mouse_Icon.png" })) {
   toWebp(find(file), path.join(PUBLIC, "art", `${id}.webp`), { maxW: 96, quality: 90 });

@@ -24,6 +24,7 @@ export function AddPlayerForm() {
       <label className="block">
         <span className="text-sm font-bold">Player name</span>
         <input name="name" required maxLength={40} autoComplete="off" className="field mt-1" />
+        <span className="mt-1 block text-sm text-bark-soft">Letters, numbers, spaces and . &apos; _ - only.</span>
       </label>
       <FormMessages state={state} />
       <button type="submit" disabled={pending} className="btn">

@@ -1,7 +1,8 @@
 import { AVATARS } from "./avatars.generated";
 import { FACTIONS, type AvatarCrop, type FactionId } from "./league";
+import { CONTROL_CHARS, INVISIBLE_CHARS, NAME_MAX, cleanPlayerName } from "./player-name";
 
-export const NAME_MAX = 40;
+export { NAME_MAX };
 
 /** Where a portrait sits in its circle when the player hasn't moved it. */
 export const DEFAULT_CROP: AvatarCrop = { x: 50, y: 32, zoom: 160 };
@@ -53,8 +54,9 @@ export function getAvatar(id: string | undefined | null) {
 /** Trims fields and returns user-facing problems; empty means the profile is valid. */
 export function validateProfile(input: ProfileInput): { clean: ProfileInput; errors: string[] } {
   const clean: ProfileInput = {
-    name: input.name.trim().replace(/\s+/g, " "),
-    bio: input.bio.trim(),
+    name: cleanPlayerName(input.name).name,
+    // Newlines and tabs are fine in a bio; other control characters are not.
+    bio: input.bio.replace(CONTROL_CHARS, "").replace(INVISIBLE_CHARS, "").trim(),
     favoriteFaction: input.favoriteFaction.trim(),
     avatar: input.avatar.trim(),
     avatarBg: input.avatarBg.trim(),
@@ -64,8 +66,8 @@ export function validateProfile(input: ProfileInput): { clean: ProfileInput; err
   };
   const errors: string[] = [];
 
-  if (!clean.name) errors.push("Choose a player name.");
-  else if (clean.name.length > NAME_MAX) errors.push(`Keep your name under ${NAME_MAX} characters.`);
+  const nameCheck = cleanPlayerName(input.name);
+  if (nameCheck.error) errors.push(nameCheck.error);
 
   if (clean.bio.length > BIO_MAX) errors.push(`Keep your bio under ${BIO_MAX} characters.`);
   if (clean.favoriteFaction && !FACTION_IDS.has(clean.favoriteFaction)) errors.push("Pick a faction from the list.");

@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Crown, Trophy } from "lucide-react";
 import { Banner } from "@/components/Banner";
-import { Embers, Panorama, Perch } from "@/components/Critters";
+import { BannerArt, Embers, Perch } from "@/components/Critters";
 import { FactionBadge } from "@/components/FactionBadge";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { LpScale } from "@/components/LpScale";
@@ -209,7 +209,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="bleed mt-8">
-          <Panorama />
+          <BannerArt />
         </div>
       </section>
 

@@ -30,7 +30,7 @@ To see the site with demo data even when `.env.local` is set, run `node scripts/
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
+2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`, then `0006_name_safety.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
 3. Copy `.env.example` to `.env.local` and fill in the project URL and publishable (or anon) key from *Project Settings → API*.
 4. *Authentication → Providers → Email*: turn **Confirm email** off, so players can sign up instantly. Set the Site URL under *Authentication → URL Configuration* to your Vercel domain.
 5. Make yourself an organizer: sign up on the site (or *Authentication → Users → Add user*), then run:
@@ -69,3 +69,9 @@ The original Root artwork lives in `/assets` (about 150 MB, **not committed**). 
 - `src/components` — shared UI (avatars, podium, leaderboard table, RSVP, session cards)
 - `supabase/migrations` — database schema and policies; `supabase/tests` — policy tests
 - `scripts/build-assets.mjs` — artwork pipeline
+
+## Security notes
+
+- The site only talks to the database through bound parameters (Supabase's client and `rpc` calls), never by building SQL strings, so names can't inject SQL.
+- Player names go through one validator (`src/lib/player-name.ts`) everywhere: letters, numbers, spaces and `. ' _ -`, 40 characters at most, invisible characters removed. Migration `0006_name_safety.sql` repeats the rule inside the database (no markup, quotes, statement punctuation, control or invisible characters; one name per player ignoring capitals).
+- Under *Authentication* in the Supabase dashboard, review the rate limits for sign-ups and sign-ins and consider turning on CAPTCHA protection, since sign-up is open to anyone.

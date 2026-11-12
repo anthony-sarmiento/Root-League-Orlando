@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -153,6 +153,29 @@ await mustFail("zoom below 100 is rejected", () => as("authenticated", who("b"),
 await mustFail("position past 100 is rejected", () => as("authenticated", who("b"), () => db.query("update players set avatar_x=140 where id=$1", [bPlayer])));
 const posOther = await as("authenticated", who("c"), () => db.query("update players set avatar_x=10 where id=$1", [bPlayer]));
 ok(posOther.affectedRows === 0, "nobody else can move it");
+
+// --- Name safety ------------------------------------------------------------------------
+const adminName = (n) => as("authenticated", who("admin"), () => db.query("insert into players (name) values ($1)", [n]));
+await mustWork("an ordinary name is accepted", () => adminName("Mallory O'Brien"));
+await mustWork("an accented name is accepted", () => adminName("Zoë Ana-María"));
+await mustFail("markup in a name is rejected", () => adminName("<script>alert(1)</script>"));
+await mustFail("quotes and semicolons in a name are rejected", () => adminName("Bob\"; drop table players;--"));
+await mustFail("a zero-width character in a name is rejected", () => adminName("Sneaky" + String.fromCodePoint(0x200b) + "Name"));
+await mustFail("a control character in a name is rejected", () => adminName("Bell" + String.fromCodePoint(7)));
+await mustFail("a name with leading or trailing spaces is rejected", () => adminName(" Padded "));
+await mustFail("a name over 40 characters is rejected", () => adminName("x".repeat(41)));
+await mustFail("the same name in different capitals is rejected", () => adminName("mallory o'brien"));
+await mustFail("an invisible-control bio is rejected", () => as("authenticated", who("admin"), () => db.query("update players set bio=$1 where id=$2", ["bad" + String.fromCodePoint(1), p1])));
+await mustWork("a bio with line breaks is fine", () => as("authenticated", who("admin"), () => db.query("update players set bio=$1 where id=$2", ["line one" + String.fromCodePoint(10) + "line two", p1])));
+const delByUser = await as("authenticated", who("c"), () => db.query("delete from players where id=$1", [p2]));
+ok(delByUser.affectedRows === 0, "a regular player cannot remove another player");
+const renByUser = await as("authenticated", who("c"), () => db.query("update players set name='Hijacked' where id=$1", [p2]));
+ok(renByUser.affectedRows === 0, "a regular player cannot rename another player");
+await mustWork("an organizer can rename a player", () => as("authenticated", who("admin"), () => db.query("update players set name='Renamed Rowan' where id=$1", [p3])));
+const lonely = (await as("authenticated", who("admin"), () => db.query("insert into players (name) values ('Lonely Hare') returning id"))).rows[0].id;
+const delByAdmin = await as("authenticated", who("admin"), () => db.query("delete from players where id=$1", [lonely]));
+ok(delByAdmin.affectedRows === 1, "an organizer can remove a player with no games");
+await mustFail("a player with games cannot be removed", () => as("authenticated", who("admin"), () => db.query("delete from players where id=$1", [p1])));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
