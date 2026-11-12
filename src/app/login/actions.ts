@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { validatePassword } from "@/lib/password";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -12,7 +13,9 @@ export interface AuthState {
 /** Kept for the existing login form's type. */
 export type LoginState = AuthState;
 
-const MIN_PASSWORD = 8;
+/** The same wording whether or not the email is already registered, so the form can't be used to find out who has an account. */
+const COULDNT_CREATE =
+  "We couldn't create an account with those details. If you've signed up before, try signing in instead.";
 
 export async function signIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured) return { error: "The league database isn't connected yet." };
@@ -41,35 +44,37 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
   if (!isSupabaseConfigured) return { error: "The league database isn't connected yet." };
 
+  // A field real visitors never see: only automated form-fillers complete it.
+  if (String(formData.get("company") ?? "") !== "") return { error: COULDNT_CREATE };
+
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
 
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: "Enter a valid email address." };
-  if (password.length < MIN_PASSWORD) return { error: `Use at least ${MIN_PASSWORD} characters for your password.` };
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email address." };
+  const passwordProblems = validatePassword(password, email);
+  if (passwordProblems.length) return { error: passwordProblems[0] };
   if (password !== confirm) return { error: "Those passwords don't match." };
 
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
+    // Log only the error code, never the email or password.
     console.error("[sign-up] failed:", error.code ?? error.name, error.status);
     if (error.code === "over_email_send_rate_limit" || error.status === 429) {
       return { error: "Too many sign-ups right now. Wait a few minutes and try again." };
     }
     if (error.code === "weak_password") return { error: "That password is too easy to guess. Try a longer one." };
-    if (error.code === "user_already_exists") return { error: "There's already an account with that email. Try signing in." };
-    return { error: "Couldn't create your account. Please try again." };
+    return { error: COULDNT_CREATE };
   }
 
   // Supabase answers "success" for an email that's already registered (to avoid leaking who has an account),
-  // but with no identities attached.
-  if (data.user && data.user.identities?.length === 0) {
-    return { error: "There's already an account with that email. Try signing in." };
-  }
+  // but with no identities attached. Don't reveal that either.
+  if (data.user && data.user.identities?.length === 0) return { error: COULDNT_CREATE };
 
   // With email confirmation off there's a session straight away; with it on, they need to confirm first.
   if (data.session) redirect("/account");
-  return { notice: "Almost there! We sent a confirmation link to your email. Click it, then sign in." };
+  return { notice: "Almost there! If that address can be used, we've sent a confirmation link. Click it, then sign in." };
 }
 
 export async function signOut() {

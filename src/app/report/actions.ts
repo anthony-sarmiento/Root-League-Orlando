@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { FormState } from "@/app/admin/actions";
+import { isUuid } from "@/lib/email";
 import { parseGameForm, toRpcResults } from "@/lib/game-form-data";
 import { validateGameInput } from "@/lib/game-input";
 import { todayISO } from "@/lib/seasons";
@@ -63,7 +64,7 @@ export async function withdrawReport(formData: FormData): Promise<void> {
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
   const id = text(formData, "reportId");
-  if (!id) return;
+  if (!isUuid(id)) return;
   const supabase = await createServerSupabase();
   await supabase.from("game_reports").delete().eq("id", id).eq("status", "pending");
   revalidatePath("/report");

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isUuid } from "@/lib/email";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 
@@ -11,7 +12,7 @@ export async function setRsvp(formData: FormData): Promise<void> {
 
   const sessionId = String(formData.get("sessionId") ?? "");
   const intent = String(formData.get("intent") ?? "");
-  if (!sessionId) return;
+  if (!isUuid(sessionId)) return;
 
   const supabase = await createServerSupabase();
   if (intent === "join") {

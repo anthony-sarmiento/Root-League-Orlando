@@ -13,7 +13,6 @@ export interface PendingClaim {
 /** The signed-in visitor, with their player profile (if any) and organizer status. */
 export interface Viewer {
   userId: string;
-  email: string | null;
   player: Player | null;
   isAdmin: boolean;
   claim: PendingClaim | null;
@@ -74,7 +73,6 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   return {
     userId: user.id,
-    email: user.email ?? null,
     isAdmin: admin.data === true,
     player: profile
       ? {

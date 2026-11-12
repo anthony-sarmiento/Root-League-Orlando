@@ -3,6 +3,9 @@ import { AddPlayerForm, AddSessionForm } from "@/components/admin/SimpleForms";
 import { ClaimActions, SeasonForm } from "@/components/admin/SeasonAndClaimForms";
 import { PageHeader } from "@/components/PageHeader";
 import { LogGameForm } from "@/components/admin/LogGameForm";
+import { AccountConnector, MergePlayersForm, type AccountRow } from "@/components/admin/AccountConnector";
+import { RevealEmail } from "@/components/admin/RevealEmail";
+import { maskEmail } from "@/lib/email";
 import { NightManager } from "@/components/admin/NightManager";
 import { ReportQueue } from "@/components/admin/ReportQueue";
 import { PlayerManager } from "@/components/admin/PlayerManager";
@@ -51,15 +54,33 @@ export default async function AdminPage() {
   const { players, sessions, games, seasons } = await getLeagueData();
   const today = todayISO();
 
+  // Every account with the name it is connected to (organizers only; absent until the connect migration is run).
+  // The full emails stay on the server: the page only gets masked ones, and an organizer asks to see one at a time.
+  const { data: accountRows } = await supabase.rpc("list_accounts");
+  const rawAccounts = Array.isArray(accountRows)
+    ? (accountRows as { user_id: string; email: string; created_at: string; player_id: string | null; player_name: string | null }[])
+    : null;
+  const accounts: AccountRow[] | null = rawAccounts
+    ? rawAccounts.map((a) => ({
+        userId: a.user_id,
+        emailMasked: maskEmail(a.email),
+        createdAt: a.created_at,
+        playerId: a.player_id,
+        playerName: a.player_name,
+      }))
+    : null;
+  const maskedByUser = new Map((accounts ?? []).map((a) => [a.userId, a.emailMasked]));
+
   // Open requests from people who say an existing name is theirs.
   const { data: claimRows } = await supabase
     .from("player_claims")
-    .select("user_id, claimant_email, note, created_at, players(name)")
+    .select("user_id, note, created_at, players(name)")
     .order("created_at");
   const claims = (claimRows ?? []).map((c) => {
     const joined = c.players as { name: string } | { name: string }[] | null;
     const name = Array.isArray(joined) ? joined[0]?.name : joined?.name;
-    return { userId: c.user_id as string, email: c.claimant_email as string, note: c.note as string | null, playerName: name ?? "Unknown" };
+    const userId = c.user_id as string;
+    return { userId, emailMasked: maskedByUser.get(userId) ?? "", note: c.note as string | null, playerName: name ?? "Unknown" };
   });
   const { reports: pendingReports } = await fetchPendingReports(supabase);
   const queued = pendingReports.map((report) => ({ report, duplicate: looksLikeDuplicate(report, games) }));
@@ -95,13 +116,14 @@ export default async function AdminPage() {
           <h2 className="mb-1 text-2xl font-bold">Name claims waiting for you</h2>
           <p className="mb-3 text-bark-soft">
             Approve only if you know this person is who they say they are. Approving gives them that player&apos;s games and points.
+            If they already made a profile of their own, it is merged into the name they claimed.
           </p>
           <ul className="divide-y-2 divide-dashed divide-bark/15">
             {claims.map((c) => (
               <li key={c.userId} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p>
-                    <strong>{c.email}</strong> wants to be <strong>{c.playerName}</strong>
+                    <RevealEmail userId={c.userId} masked={c.emailMasked} /> wants to be <strong>{c.playerName}</strong>
                   </p>
                   {c.note && <p className="text-sm text-bark-soft">“{c.note}”</p>}
                 </div>
@@ -135,6 +157,27 @@ export default async function AdminPage() {
           <AddSessionForm today={today} />
         </section>
       </div>
+
+      {accounts && (
+        <section className="card p-5">
+          <h2 className="mb-1 text-2xl font-bold">Connect accounts to names</h2>
+          <p className="mb-4 max-w-[75ch] text-bark-soft">
+            For someone who made a second account, or a fresh profile next to a name you already had. Pick their account
+            and the name they really are. If the account has its own profile, it is merged into that name: games, RSVPs
+            and reports move over and the duplicate goes away. If the name already has an account, this one is added
+            alongside it, so both logins work.
+          </p>
+          <AccountConnector accounts={accounts} players={managedPlayers} />
+          <div className="mt-6 border-t-2 border-dashed border-bark/20 pt-5">
+            <h3 className="mb-1 text-xl font-bold">Merge two names</h3>
+            <p className="mb-4 max-w-[75ch] text-bark-soft">
+              Two names that are really one person, even with no account involved (for example &ldquo;Bram&rdquo; and
+              &ldquo;Bramble&rdquo;). Two people who sat at the same table can&apos;t be merged.
+            </p>
+            <MergePlayersForm players={managedPlayers} />
+          </div>
+        </section>
+      )}
 
       <section className="card p-5">
         <h2 className="mb-1 text-2xl font-bold">Players</h2>

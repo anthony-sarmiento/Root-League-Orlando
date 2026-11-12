@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { ClaimForm } from "@/components/account/ClaimForm";
+import { DeleteAccountForm } from "@/components/account/DeleteAccountForm";
 import { ProfileForm } from "@/components/account/ProfileForm";
 import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/PageHeader";
@@ -21,20 +22,18 @@ export default async function AccountPage() {
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
 
-  const { players, sessions, signups } = await getLeagueData();
+  const { players, sessions, signups, games } = await getLeagueData();
   const today = todayISO();
   const me = viewer.player;
   const playerById = new Map(players.map((p) => [p.id, p]));
 
-  // Names that already belong to an account can't be claimed.
-  let unclaimed = players;
-  if (!me) {
-    const supabase = await createServerSupabase();
-    const { data } = await supabase.rpc("claimed_player_ids");
-    const claimed = new Set<string>((data as string[] | null) ?? []);
-    unclaimed = players.filter((p) => !claimed.has(p.id));
-  }
+  // Names that already belong to an account can't be claimed, and neither can your own.
+  const supabase = await createServerSupabase();
+  const { data: claimedIds } = await supabase.rpc("claimed_player_ids");
+  const claimed = new Set<string>((claimedIds as string[] | null) ?? []);
+  const unclaimed = players.filter((p) => !claimed.has(p.id) && p.id !== me?.id);
 
+  const gamesPlayed = me ? games.filter((g) => g.results.some((r) => r.playerId === me.id)).length : 0;
   const upcoming = sessions.filter((s) => s.date >= today).sort((a, b) => a.date.localeCompare(b.date));
 
   return (
@@ -100,6 +99,18 @@ export default async function AccountPage() {
               ))
             )}
           </section>
+
+          <section className="card h-fit p-5 sm:p-7 lg:col-span-2">
+            <h2 className="text-2xl font-bold">Is another name actually you?</h2>
+            <p className="mt-1 mb-5 max-w-[70ch] text-bark-soft">
+              Made a second account, or did an organizer log your games under a different name? Ask to claim that name.
+              When an organizer approves, this profile is merged into it: you keep that name&apos;s games and points, and
+              the details you filled in here carry over.
+            </p>
+            <div className="max-w-xl">
+              <ClaimForm players={unclaimed} pending={viewer.claim} />
+            </div>
+          </section>
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -117,6 +128,13 @@ export default async function AccountPage() {
             <ClaimForm players={unclaimed} pending={viewer.claim} />
           </section>
         </div>
+      )}
+
+      {!viewer.isAdmin && (
+        <section className="card p-5 sm:p-7">
+          <h2 className="mb-2 text-2xl font-bold">Delete my account</h2>
+          <DeleteAccountForm hasGames={Boolean(me && gamesPlayed > 0)} />
+        </section>
       )}
     </div>
   );

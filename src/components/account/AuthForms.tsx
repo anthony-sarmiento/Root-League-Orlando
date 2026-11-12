@@ -59,13 +59,20 @@ export function SignUpForm() {
       </label>
       <label className="block">
         <span className="text-sm font-bold">Password</span>
-        <input name="password" type="password" autoComplete="new-password" required minLength={8} className="field mt-1" />
-        <span className="mt-1 block text-sm text-bark-soft">At least 8 characters.</span>
+        <input name="password" type="password" autoComplete="new-password" required minLength={10} maxLength={128} className="field mt-1" />
+        <span className="mt-1 block text-sm text-bark-soft">At least 10 characters. A few words in a row works well.</span>
       </label>
       <label className="block">
         <span className="text-sm font-bold">Type it again</span>
-        <input name="confirm" type="password" autoComplete="new-password" required minLength={8} className="field mt-1" />
+        <input name="confirm" type="password" autoComplete="new-password" required minLength={10} maxLength={128} className="field mt-1" />
       </label>
+      {/* Honeypot: hidden from people and from screen readers, so only bots fill it in. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label>
+          Company
+          <input name="company" type="text" tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
       <Messages state={state} />
       <button type="submit" disabled={pending} className="btn acorn w-full">
         {pending ? "Creating account…" : "Create my account"}

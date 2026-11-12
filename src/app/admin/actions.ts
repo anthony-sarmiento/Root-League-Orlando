@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminForAction } from "@/lib/admin";
+import { isUuid } from "@/lib/email";
 import { cleanPlayerName } from "@/lib/player-name";
 import { parseGameForm, toRpcResults } from "@/lib/game-form-data";
 import { validateGameInput, type GameInput } from "@/lib/game-input";
@@ -18,6 +19,11 @@ const NOT_ADMIN: FormState = { errors: ["Only league organizers can do that."] }
 const refresh = () => revalidatePath("/", "layout");
 
 const text = (formData: FormData, key: string) => String(formData.get(key) ?? "").trim();
+/** An id from a form: a real UUID, or empty (which every caller already treats as "nothing chosen"). */
+const idField = (formData: FormData, key: string) => {
+  const value = text(formData, key);
+  return isUuid(value) ? value : "";
+};
 
 /** Checks a table against the league (players exist, night exists) and returns its results ready for the database. */
 async function checkGame(
@@ -74,7 +80,7 @@ export async function updateGame(_prev: FormState, formData: FormData): Promise<
   if (!admin) return NOT_ADMIN;
   const { supabase } = admin;
 
-  const gameId = text(formData, "gameId");
+  const gameId = idField(formData, "gameId");
   if (!gameId) return { errors: ["Pick a table to edit."] };
 
   const input = parseGameForm(formData);
@@ -125,7 +131,7 @@ export async function renamePlayer(_prev: FormState, formData: FormData): Promis
   const admin = await requireAdminForAction();
   if (!admin) return NOT_ADMIN;
 
-  const id = text(formData, "playerId");
+  const id = idField(formData, "playerId");
   if (!id) return { errors: ["Pick a player to rename."] };
   const { name, error: nameError } = cleanPlayerName(text(formData, "name"));
   if (nameError) return { errors: [nameError] };
@@ -145,7 +151,7 @@ export async function deletePlayer(_prev: FormState, formData: FormData): Promis
   const admin = await requireAdminForAction();
   if (!admin) return NOT_ADMIN;
 
-  const id = text(formData, "playerId");
+  const id = idField(formData, "playerId");
   if (!id) return { errors: ["Pick a player to remove."] };
 
   const { count, error: countError } = await admin.supabase
@@ -197,7 +203,7 @@ export async function approveReport(_prev: FormState, formData: FormData): Promi
   if (!admin) return NOT_ADMIN;
   const { supabase } = admin;
 
-  const reportId = text(formData, "reportId");
+  const reportId = idField(formData, "reportId");
   if (!reportId) return { errors: ["Pick a report to approve."] };
 
   const input = parseGameForm(formData);
@@ -226,12 +232,84 @@ export async function approveReport(_prev: FormState, formData: FormData): Promi
   return { ok: "Approved. The table is on the books.", nonce: Date.now() };
 }
 
+/** What an organizer sees after a connect or merge: how much moved. */
+function movedSummary(result: unknown): string {
+  const r = (result ?? {}) as { games?: number; signups?: number; already?: boolean };
+  if (r.already) return "That account was already connected to that name.";
+  const parts = [] as string[];
+  if (r.games) parts.push(`${r.games} ${r.games === 1 ? "game" : "games"}`);
+  if (r.signups) parts.push(`${r.signups} ${r.signups === 1 ? "RSVP" : "RSVPs"}`);
+  return parts.length ? `Done. Moved ${parts.join(" and ")}.` : "Done.";
+}
+
+/** The database's own checks raise readable messages (for example "They both played in the same game"). */
+function connectError(error: { code?: string; message: string }): string {
+  if (error.code === "PGRST202") return "The database needs its latest update (migration 0009) before accounts can be connected.";
+  if (error.code === "P0001") return error.message;
+  return "Couldn't do that. Nothing was changed.";
+}
+
+/** Connects an account to a name. If the account has a different profile, it is merged into that name. */
+export async function connectAccount(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const userId = idField(formData, "userId");
+  const playerId = idField(formData, "playerId");
+  if (!userId || !playerId) return { errors: ["Pick an account and a name."] };
+
+  const { data, error } = await admin.supabase.rpc("link_account_to_player", { p_user_id: userId, p_player_id: playerId });
+  if (error) {
+    console.error("[connect-account] failed:", error.code, error.message);
+    return { errors: [connectError(error)] };
+  }
+  refresh();
+  return { ok: movedSummary(data), nonce: Date.now() };
+}
+
+/** Folds a duplicate name into the one to keep: games, RSVPs, reports and accounts move over. */
+export async function mergePlayers(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const sourceId = idField(formData, "sourceId");
+  const targetId = idField(formData, "targetId");
+  if (!sourceId || !targetId) return { errors: ["Pick the duplicate and the name to keep."] };
+
+  const { data, error } = await admin.supabase.rpc("merge_players", { p_source: sourceId, p_target: targetId });
+  if (error) {
+    console.error("[merge-players] failed:", error.code, error.message);
+    return { errors: [connectError(error)] };
+  }
+  refresh();
+  return { ok: movedSummary(data), nonce: Date.now() };
+}
+
+/**
+ * Shows one account's full email to an organizer, on request. Emails are masked everywhere on the page; this is the
+ * only way to see one, and every look is written to the server log (who looked at which account, never the address).
+ */
+export async function revealEmail(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const userId = idField(formData, "userId");
+  if (!userId) return { errors: ["Pick an account."] };
+
+  const { data, error } = await admin.supabase.rpc("list_accounts");
+  const row = Array.isArray(data) ? (data as { user_id: string; email: string }[]).find((a) => a.user_id === userId) : undefined;
+  if (error || !row) return { errors: ["Couldn't look that account up."] };
+
+  console.info("[reveal-email] organizer", admin.user.id, "viewed account", userId);
+  return { ok: row.email };
+}
+
 /** Turns a report down, with an optional reason the player can read. */
 export async function rejectReport(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdminForAction();
   if (!admin) return NOT_ADMIN;
 
-  const reportId = text(formData, "reportId");
+  const reportId = idField(formData, "reportId");
   const reason = text(formData, "reason");
   if (!reportId) return { errors: ["Pick a report to reject."] };
   if (reason.length > 280) return { errors: ["Keep the reason under 280 characters."] };
@@ -292,7 +370,7 @@ export async function deleteSession(_prev: FormState, formData: FormData): Promi
 export async function deleteGame(formData: FormData): Promise<void> {
   const admin = await requireAdminForAction();
   if (!admin) return;
-  const id = text(formData, "gameId");
+  const id = idField(formData, "gameId");
   if (!id) return;
   await admin.supabase.from("games").delete().eq("id", id);
   refresh();
@@ -302,7 +380,7 @@ export async function deleteGame(formData: FormData): Promise<void> {
 export async function approveClaim(formData: FormData): Promise<void> {
   const admin = await requireAdminForAction();
   if (!admin) return;
-  const userId = text(formData, "userId");
+  const userId = idField(formData, "userId");
   if (!userId) return;
   const { error } = await admin.supabase.rpc("approve_claim", { p_user_id: userId });
   if (error) console.error("[approve-claim] failed:", error.code, error.message);
@@ -312,7 +390,7 @@ export async function approveClaim(formData: FormData): Promise<void> {
 export async function rejectClaim(formData: FormData): Promise<void> {
   const admin = await requireAdminForAction();
   if (!admin) return;
-  const userId = text(formData, "userId");
+  const userId = idField(formData, "userId");
   if (!userId) return;
   await admin.supabase.from("player_claims").delete().eq("user_id", userId);
   refresh();

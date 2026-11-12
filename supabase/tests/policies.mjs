@@ -14,7 +14,7 @@ await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
   create schema auth;
-  create table auth.users (id uuid primary key default gen_random_uuid(), email text);
+  create table auth.users (id uuid primary key default gen_random_uuid(), email text, created_at timestamptz not null default now());
   create function auth.jwt() returns jsonb language sql stable as
     $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
   create function auth.uid() returns uuid language sql stable as
@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql", "0009_connect_accounts.sql", "0010_privacy.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -82,11 +82,12 @@ ok(anonPlayers.rows[0]?.name === "Birch" && anonPlayers.rows[0].favorite_faction
 
 // --- Claims ----------------------------------------------------------------
 await mustWork("C files a claim on 'Orphan'", () => as("authenticated", who("c"), () => db.query("insert into player_claims (user_id, player_id, note) values ($1,$2,'Hi, I am Orphan')", [ids.c, orphan])));
-await mustFail("claim with someone else's email is rejected", () => as("authenticated", who("d"), () => db.query("insert into player_claims (user_id, player_id, claimant_email) values ($1,$2,'spoof@x.test')", [ids.d, orphan])));
+await mustFail("a claim can no longer carry an email copy", () => as("authenticated", who("d"), () => db.query("insert into player_claims (user_id, player_id, claimant_email) values ($1,$2,'spoof@x.test')", [ids.d, orphan])));
 await mustFail("claim for another user id is rejected", () => as("authenticated", who("d"), () => db.query("insert into player_claims (user_id, player_id) values ($1,$2)", [ids.c, orphan])));
-await mustFail("user with a profile cannot also claim", () => as("authenticated", who("b"), () => db.query("insert into player_claims (user_id, player_id) values ($1,$2)", [ids.b, orphan])));
-const claimEmail = await as("authenticated", who("admin"), () => db.query("select claimant_email from player_claims"));
-ok(claimEmail.rows[0]?.claimant_email === "c@x.test", "claimant email recorded from the account, visible to organizer");
+await mustWork("a user who already has a profile can also claim a name", () => as("authenticated", who("b"), () => db.query("insert into player_claims (user_id, player_id) values ($1,$2)", [ids.b, orphan])));
+await as("authenticated", who("b"), () => db.query("delete from player_claims where user_id = $1", [ids.b]));
+const claimColumns = await db.query("select column_name from information_schema.columns where table_name = 'player_claims'");
+ok(!claimColumns.rows.some((r) => r.column_name === "claimant_email"), "claims store no copy of anyone's email");
 const dSees = await as("authenticated", who("d"), () => db.query("select count(*)::int n from player_claims"));
 ok(dSees.rows[0].n === 0, "other users cannot see claims");
 await mustFail("regular user cannot approve a claim", () => as("authenticated", who("c"), () => db.query("select approve_claim($1)", [ids.c])));
@@ -251,6 +252,96 @@ ok(reject.affectedRows === 1, "an organizer can record a rejection");
 
 for (let i = 0; i < 5; i++) await submit("d", ["2026-11-0" + (i + 1), 1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)]), null]);
 await mustFail("a sixth waiting report is refused", () => submit("d", ["2026-11-06", 1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)]), null]));
+
+// --- Connecting accounts to names ------------------------------------------------------------
+// The scenario: organizers logged games under "Alpha Old"; Alpha then signed up and made a fresh profile.
+const admin_ = (fn) => as("authenticated", who("admin"), fn);
+const newUser = async (email) => (await db.query("insert into auth.users (email) values ($1) returning id", [email])).rows[0].id;
+ids.e = await newUser("e@x.test");
+ids.f = await newUser("f@x.test");
+ids.g = await newUser("g@x.test");
+
+const alphaOld = (await admin_(() => db.query("insert into players (name) values ('Alpha Old') returning id"))).rows[0].id;
+const gameWithAlpha = [seat(alphaOld, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3), seat(p3, "vagabond", 4)];
+const alphaGame = (await admin_(() => db.query("select log_game('2026-11-09', null, $1::jsonb, 1::smallint) as id", [JSON.stringify(gameWithAlpha)]))).rows[0].id;
+await admin_(() => db.query("insert into sessions (date) values ('2026-11-22')"));
+const upcomingNight = (await db.query("select id from sessions where date = '2026-11-22'")).rows[0].id;
+
+const alphaNew = (await as("authenticated", who("e"), () => db.query("select create_my_profile('Alpha New','Hello woodland','riverfolk','camdyn') as id"))).rows[0].id;
+await mustWork("the new profile can claim the old name", () => as("authenticated", who("e"), () => db.query("insert into player_claims (user_id, player_id) values ($1,$2)", [ids.e, alphaOld])));
+await mustFail("a claim on a name that already has an account is refused", () => as("authenticated", who("g"), () => db.query("insert into player_claims (user_id, player_id) values ($1,$2)", [ids.g, bPlayer])));
+
+await mustFail("a regular player cannot list accounts", () => as("authenticated", who("e"), () => db.query("select * from list_accounts()")));
+const accountList = await admin_(() => db.query("select email, player_name from list_accounts()"));
+ok(accountList.rows.some((r) => r.email === "e@x.test" && r.player_name === "Alpha New"), "an organizer can list accounts with their names");
+ok(accountList.rows.some((r) => r.email === "g@x.test" && r.player_name === null), "accounts without a profile are listed too");
+
+// The new profile RSVPs for a coming night, then the claim is approved.
+await as("authenticated", who("e"), () => db.query("insert into session_signups (session_id, player_id) values ($1,$2)", [upcomingNight, alphaNew]));
+await mustWork("approving merges the new profile into the old name", () => admin_(() => db.query("select approve_claim($1)", [ids.e])));
+const eLink = await as("authenticated", who("e"), () => db.query("select player_id from player_accounts"));
+ok(eLink.rows[0]?.player_id === alphaOld, "the account now owns the old name");
+const gone = await db.query("select count(*)::int n from players where id = $1", [alphaNew]);
+ok(gone.rows[0].n === 0, "the duplicate profile is gone");
+const kept = await db.query("select name, bio, favorite_faction, avatar from players where id = $1", [alphaOld]);
+ok(kept.rows[0].name === "Alpha Old" && kept.rows[0].bio === "Hello woodland" && kept.rows[0].avatar === "camdyn", "the old name keeps its name and takes the new profile's details");
+const stillPlayed = await db.query("select count(*)::int n from game_results where game_id = $1 and player_id = $2", [alphaGame, alphaOld]);
+ok(stillPlayed.rows[0].n === 1, "the old name's game history is untouched");
+const rsvp = await db.query("select count(*)::int n from session_signups where session_id = $1 and player_id = $2", [upcomingNight, alphaOld]);
+ok(rsvp.rows[0].n === 1, "the RSVP moved to the old name");
+
+// An organizer connects a second login to a name that already has an account (a person with two accounts).
+await mustWork("an organizer can add a second account to a name", () => admin_(() => db.query("select link_account_to_player($1,$2)", [ids.g, alphaOld])));
+const bothLinked = await db.query("select count(*)::int n from player_accounts where player_id = $1", [alphaOld]);
+ok(bothLinked.rows[0].n === 2, "both logins now belong to the one player");
+const gEdit = await as("authenticated", who("g"), () => db.query("update players set bio='From my other login' where id = $1", [alphaOld]));
+ok(gEdit.affectedRows === 1, "the second login can edit that profile");
+await mustFail("a regular player cannot connect accounts", () => as("authenticated", who("f"), () => db.query("select link_account_to_player($1,$2)", [ids.f, alphaOld])));
+
+// Merging two organizer-made duplicates, each with games, plus an RSVP both made.
+const dupA = (await admin_(() => db.query("insert into players (name) values ('Dup Left') returning id"))).rows[0].id;
+const dupB = (await admin_(() => db.query("insert into players (name, bio) values ('Dup Right','Real bio') returning id"))).rows[0].id;
+await admin_(() => db.query("select log_game('2026-11-10', null, $1::jsonb, 1::smallint)", [JSON.stringify([seat(dupA, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)])]));
+await admin_(() => db.query("select log_game('2026-11-11', null, $1::jsonb, 1::smallint)", [JSON.stringify([seat(dupB, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)])]));
+await admin_(() => db.query("insert into session_signups (session_id, player_id) values ($1,$2),($1,$3)", [upcomingNight, dupA, dupB]));
+await as("authenticated", who("e"), () => db.query("select submit_game_report('2026-11-10', null, 1::smallint, $1::jsonb, null)", [JSON.stringify([seat(alphaOld, "marquise", 1), seat(dupA, "eyrie", 2), seat(p1, "alliance", 3)])]));
+await mustFail("a regular player cannot merge players", () => as("authenticated", who("d"), () => db.query("select merge_players($1,$2)", [dupA, dupB])));
+await mustFail("merging a player into themselves is refused", () => admin_(() => db.query("select merge_players($1,$1)", [dupA])));
+const merged = await mustWork("an organizer can merge two duplicates", () => admin_(() => db.query("select merge_players($1,$2) as r", [dupA, dupB])));
+ok(merged?.rows[0].r.games === 1, "the merge reports the games it moved");
+const dupGames = await db.query("select count(*)::int n from game_results where player_id = $1", [dupB]);
+ok(dupGames.rows[0].n === 2, "the kept name now has both players' games");
+const dupGone = await db.query("select count(*)::int n from players where id = $1", [dupA]);
+ok(dupGone.rows[0].n === 0, "the duplicate is removed");
+const oneRsvp = await db.query("select count(*)::int n from session_signups where session_id = $1 and player_id = $2", [upcomingNight, dupB]);
+ok(oneRsvp.rows[0].n === 1, "two RSVPs for one night collapse to one");
+const rewritten = await db.query("select count(*)::int n from game_reports where results::text like $1", ["%" + dupB + "%"]);
+ok(rewritten.rows[0].n === 1, "a pending report that named the duplicate now names the kept player");
+const keepBio = await db.query("select bio from players where id = $1", [dupB]);
+ok(keepBio.rows[0].bio === "Real bio", "the kept name's own details win");
+
+// Two people who sat at the same table can't be the same person.
+const sameTableA = (await admin_(() => db.query("insert into players (name) values ('Same Table A') returning id"))).rows[0].id;
+const sameTableB = (await admin_(() => db.query("insert into players (name) values ('Same Table B') returning id"))).rows[0].id;
+await admin_(() => db.query("select log_game('2026-11-12', null, $1::jsonb, 1::smallint)", [JSON.stringify([seat(sameTableA, "marquise", 1), seat(sameTableB, "eyrie", 2), seat(p1, "alliance", 3)])]));
+await mustFail("players who sat at the same table cannot be merged", () => admin_(() => db.query("select merge_players($1,$2)", [sameTableA, sameTableB])));
+
+// --- Deleting your own account ------------------------------------------------------------
+// h: a profile with no games. i: a profile with games. j: the organizer.
+ids.h = await newUser("h@x.test");
+ids.i = await newUser("i@x.test");
+const hPlayer = (await as("authenticated", who("h"), () => db.query("select create_my_profile('Hermit','About me',null,null) as id"))).rows[0].id;
+const iPlayer = (await as("authenticated", who("i"), () => db.query("select create_my_profile('Ivy','About me too',null,null) as id"))).rows[0].id;
+await admin_(() => db.query("select log_game('2026-11-13', null, $1::jsonb, 1::smallint)", [JSON.stringify([seat(iPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)])]));
+await mustFail("a signed-out visitor cannot delete an account", () => as("anon", null, () => db.query("select delete_my_account()")));
+await mustFail("an organizer cannot delete their own account this way", () => admin_(() => db.query("select delete_my_account()")));
+await mustWork("a player can delete their own account", () => as("authenticated", who("h"), () => db.query("select delete_my_account()")));
+ok((await db.query("select count(*)::int n from auth.users where id = $1", [ids.h])).rows[0].n === 0, "the login (and its email) is gone");
+ok((await db.query("select count(*)::int n from players where id = $1", [hPlayer])).rows[0].n === 0, "a profile with no games is removed too");
+await mustWork("a player with games can delete their account", () => as("authenticated", who("i"), () => db.query("select delete_my_account()")));
+const ivy = await db.query("select name, bio from players where id = $1", [iPlayer]);
+ok(ivy.rows[0]?.name === "Ivy" && ivy.rows[0].bio === null, "their name and games stay, what they wrote about themselves goes");
+ok((await db.query("select count(*)::int n from player_accounts where player_id = $1", [iPlayer])).rows[0].n === 0, "the name is no longer tied to any account");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

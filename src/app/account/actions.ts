@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isUuid } from "@/lib/email";
 import { validateProfile, type ProfileInput } from "@/lib/profile";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
@@ -120,11 +121,11 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
 export async function submitClaim(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
-  if (viewer.player) return { errors: ["You already have a profile."] };
 
   const playerId = text(formData, "playerId");
   const note = text(formData, "note").trim();
-  if (!playerId) return { errors: ["Choose the name that's yours."] };
+  if (!playerId || !isUuid(playerId)) return { errors: ["Choose the name that's yours."] };
+  if (playerId === viewer.player?.id) return { errors: ["That name is already your profile."] };
   if (note.length > 280) return { errors: ["Keep your note under 280 characters."] };
 
   const supabase = await createServerSupabase();
@@ -138,7 +139,11 @@ export async function submitClaim(_prev: ProfileState, formData: FormData): Prom
   }
 
   refresh();
-  return { ok: "Claim sent! An organizer will confirm it, usually at the next game night." };
+  return {
+    ok: viewer.player
+      ? "Claim sent! When an organizer confirms it, this profile is merged into that name."
+      : "Claim sent! An organizer will confirm it, usually at the next game night.",
+  };
 }
 
 export async function withdrawClaim(): Promise<void> {
@@ -147,4 +152,25 @@ export async function withdrawClaim(): Promise<void> {
   const supabase = await createServerSupabase();
   await supabase.from("player_claims").delete().eq("user_id", viewer.userId);
   refresh();
+}
+
+/** The signed-in person removes their own login and email. Their league history stays under their player name. */
+export async function deleteMyAccount(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const viewer = await getViewer();
+  if (!viewer) redirect("/login");
+  if (text(formData, "confirm") !== "DELETE") return { errors: ["Type DELETE to confirm."] };
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) {
+    console.error("[delete-account] failed:", error.code, error.message);
+    if (error.code === "P0001") return { errors: [error.message] };
+    if (error.code === "PGRST202") return { errors: ["Account deletion isn't switched on yet. Please tell an organizer."] };
+    return { errors: ["Couldn't delete your account. Nothing was changed."] };
+  }
+
+  // The login no longer exists; clear the session cookies that pointed at it.
+  await supabase.auth.signOut();
+  refresh();
+  redirect("/");
 }
