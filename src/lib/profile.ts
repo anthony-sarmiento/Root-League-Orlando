@@ -4,8 +4,8 @@ import { CONTROL_CHARS, INVISIBLE_CHARS, NAME_MAX, cleanPlayerName } from "./pla
 
 export { NAME_MAX };
 
-/** Where a portrait sits in its circle when the player hasn't moved it. */
-export const DEFAULT_CROP: AvatarCrop = { x: 50, y: 32, zoom: 160 };
+/** A portrait the player hasn't moved is shown whole, centred and uncropped; they can zoom and move it themselves. */
+export const DEFAULT_CROP: AvatarCrop = { x: 50, y: 50, zoom: 100 };
 export const ZOOM_MIN = 100;
 export const ZOOM_MAX = 300;
 

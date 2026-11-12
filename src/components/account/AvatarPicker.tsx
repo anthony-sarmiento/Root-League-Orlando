@@ -196,7 +196,7 @@ export function AvatarPicker({ name, defaultAvatar = "", defaultBg, defaultCrop 
                       alt={a.name}
                       width={220}
                       height={220}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                       style={cropStyle()}
                     />
                   </label>

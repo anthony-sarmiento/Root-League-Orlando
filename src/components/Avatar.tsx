@@ -57,13 +57,13 @@ export function Avatar({ name, avatar, bg, crop, size = 44, className = "" }: Pr
         className={`relative inline-flex shrink-0 overflow-hidden rounded-full border-2 border-bark/25 ${className}`}
         style={style}
       >
-        {/* Zoomed toward the face so the character reads as a portrait, not a tiny full-body sticker. */}
+        {/* The whole portrait, uncropped, unless the player has zoomed or moved it. */}
         <Image
           src={art.src}
           alt=""
           width={Math.max(size * 2, 128)}
           height={Math.max(size * 2, 128)}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           style={cropStyle(crop)}
         />
       </span>
