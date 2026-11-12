@@ -99,9 +99,9 @@ export default async function ReportPage() {
         <section className="card p-5 sm:p-7">
           <h2 className="mb-1 text-3xl font-bold">Your table</h2>
           <p className="mb-5 text-bark-soft">
-            Pick the night and round, then list everyone at the table in finishing order, starting with 1st. You need to
-            be one of the players. Nothing counts until an organizer approves it, and you can withdraw a report while it
-            is waiting.
+            Pick the night and round, then drag players from the roster into finishing order (or tap a name to seat
+            them, or search in a place). Tap the arrow beside a name to open their profile. You need to be one of the
+            players. Nothing counts until an organizer approves it, and you can withdraw a report while it is waiting.
           </p>
           <LogGameForm mode="report" players={players} sessions={nights} today={today} reporterId={me.id} />
         </section>

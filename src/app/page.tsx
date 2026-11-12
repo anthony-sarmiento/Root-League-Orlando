@@ -210,7 +210,7 @@ export default async function Home() {
         <Embers count={22} />
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <h2 className="text-5xl font-bold sm:text-7xl">
-            <span className="text-[#f2c868]">GEEK&apos;D</span> ROOT LEAGUE
+            <span className="text-[#f2c868]">ORLANDO</span> ROOT LEAGUE
           </h2>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/players" className="btn acorn">Meet the Players</Link>

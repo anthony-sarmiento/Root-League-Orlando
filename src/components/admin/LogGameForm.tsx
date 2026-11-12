@@ -3,9 +3,9 @@
 import { startTransition, useActionState, useEffect, useState } from "react";
 import { approveReport, logGame, updateGame, type FormState } from "@/app/admin/actions";
 import { submitGameReport } from "@/app/report/actions";
-import { FACTIONS, MAX_ROUNDS, PLACEMENTS, PLAYERS_PER_GAME, TABLE_SIZES, type Game, type Player, type Session } from "@/lib/league";
-import { ordinal } from "@/lib/format";
+import { MAX_ROUNDS, PLAYERS_PER_GAME, TABLE_SIZES, type Game, type Player, type Session } from "@/lib/league";
 import { FormMessages } from "./FormMessages";
+import { TableBuilder, type Seat } from "./TableBuilder";
 
 interface Props {
   players: Player[];
@@ -28,11 +28,6 @@ interface Props {
   defaultRound?: number;
   /** Called after a successful save (to close an inline editor). */
   onSaved?: () => void;
-}
-
-interface Seat {
-  playerId: string;
-  faction: string;
 }
 
 const emptySeats = (n: number): Seat[] => Array.from({ length: n }, () => ({ playerId: "", faction: "" }));
@@ -88,13 +83,9 @@ export function LogGameForm({
     setTableSize(n);
     setSeats((prev) => (n <= prev.length ? prev.slice(0, n) : [...prev, ...emptySeats(n - prev.length)]));
   };
-  const update = (i: number, patch: Partial<Seat>) =>
-    setSeats((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
-
-  const takenPlayers = new Set(seats.map((s) => s.playerId).filter(Boolean));
-  const takenFactions = new Set(seats.map((s) => s.faction).filter(Boolean));
   const attached = sessions.find((s) => s.id === sessionId);
-  const uid = game?.id ?? "new";
+  // Organizers see a tighter form than players reporting a game.
+  const compact = mode !== "report";
 
   return (
     <form
@@ -109,7 +100,7 @@ export function LogGameForm({
       {mode === "edit" && game && <input type="hidden" name="gameId" value={game.id} />}
       {mode === "review" && reportId && <input type="hidden" name="reportId" value={reportId} />}
 
-      <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_0.7fr]">
+      <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_0.7fr] lg:grid-cols-[1.4fr_1fr_0.7fr_auto]">
         <label className="block">
           <span className="text-sm font-bold">Game night</span>
           <select
@@ -154,62 +145,23 @@ export function LogGameForm({
             ))}
           </select>
         </label>
+        <fieldset>
+          <legend className="text-sm font-bold">Table size</legend>
+          <div className="mt-1 flex gap-2">
+            {TABLE_SIZES.map((n) => (
+              <label
+                key={n}
+                className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-bark/25 bg-paper px-4 py-1.5 text-sm font-bold has-[:checked]:border-moss has-[:checked]:bg-moss/15 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-acorn"
+              >
+                <input type="radio" name="tableSize" value={n} checked={tableSize === n} onChange={() => resize(n)} className="sr-only" />
+                {n} players
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-bold">Table size</legend>
-        <div className="mt-1 flex gap-2">
-          {TABLE_SIZES.map((n) => (
-            <label
-              key={n}
-              className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-bark/25 bg-paper px-4 py-1.5 text-sm font-bold has-[:checked]:border-moss has-[:checked]:bg-moss/15 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-acorn"
-            >
-              <input type="radio" name="tableSize" value={n} checked={tableSize === n} onChange={() => resize(n)} className="sr-only" />
-              {n} players
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-bold">Results, in finishing order</legend>
-        {PLACEMENTS.slice(0, tableSize).map((placement, i) => (
-          <div key={`${uid}-${placement}`} className="grid grid-cols-[3.25rem_1fr_1fr] items-center gap-2">
-            <span className="font-display text-lg font-bold text-acorn-deep">{ordinal(placement)}</span>
-            <select
-              name={`player-${i}`}
-              aria-label={`${ordinal(placement)} place player`}
-              className="field"
-              value={seats[i]?.playerId ?? ""}
-              onChange={(e) => update(i, { playerId: e.target.value })}
-              required
-            >
-              <option value="">Player…</option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id} disabled={takenPlayers.has(p.id) && seats[i]?.playerId !== p.id}>
-                  {p.name}
-                  {p.id === reporterId ? " (you)" : ""}
-                </option>
-              ))}
-            </select>
-            <select
-              name={`faction-${i}`}
-              aria-label={`${ordinal(placement)} place faction`}
-              className="field"
-              value={seats[i]?.faction ?? ""}
-              onChange={(e) => update(i, { faction: e.target.value })}
-              required
-            >
-              <option value="">Faction…</option>
-              {FACTIONS.map((f) => (
-                <option key={f.id} value={f.id} disabled={takenFactions.has(f.id) && seats[i]?.faction !== f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
-      </fieldset>
+      <TableBuilder players={players} seats={seats} tableSize={tableSize} onSeatsChange={setSeats} reporterId={reporterId} compact={compact} />
 
       {mode === "report" && (
         <label className="block">
