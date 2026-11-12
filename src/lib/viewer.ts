@@ -25,6 +25,7 @@ interface PlayerJoin {
   bio: string | null;
   favorite_faction: string | null;
   avatar: string | null;
+  avatar_bg?: string | null;
 }
 
 // Supabase returns a joined row as an object or a one-item array depending on the relation.
@@ -43,12 +44,23 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [link, admin, claim] = await Promise.all([
-    supabase
+  const readLink = async () => {
+    const full = await supabase
+      .from("player_accounts")
+      .select("players(id, name, bio, favorite_faction, avatar, avatar_bg)")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!full.error) return full;
+    // The avatar-background migration may not have been run yet: ask again without that column.
+    return supabase
       .from("player_accounts")
       .select("players(id, name, bio, favorite_faction, avatar)")
       .eq("user_id", user.id)
-      .maybeSingle(),
+      .maybeSingle();
+  };
+
+  const [link, admin, claim] = await Promise.all([
+    readLink(),
     supabase.rpc("is_admin"),
     supabase.from("player_claims").select("player_id, note, players(name)").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -68,6 +80,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
           bio: profile.bio ?? undefined,
           favoriteFaction: asFactionId(profile.favorite_faction),
           avatar: profile.avatar ?? undefined,
+          avatarBg: asFactionId(profile.avatar_bg),
         }
       : null,
     claim: claim.data

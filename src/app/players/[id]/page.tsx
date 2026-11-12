@@ -13,6 +13,8 @@ import { getViewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
+const FORM_COLORS: Record<number, string> = { 1: "#e2b04a", 2: "#bdb7a8", 3: "#c58a5a", 4: "#9bb86a" };
+
 export async function generateMetadata({ params }: PageProps<"/players/[id]">): Promise<Metadata> {
   const { id } = await params;
   const { players } = await getLeagueData();
@@ -39,7 +41,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
             <ArrowLeft size={18} aria-hidden="true" /> All players
           </Link>
           <div className="mt-5 flex flex-wrap items-center gap-6">
-            <Avatar name={player.name} avatar={player.avatar} size={136} className="shadow-[0_14px_26px_-8px_rgba(0,0,0,0.6)] ring-4 ring-honey/70" />
+            <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} size={152} className="shadow-[0_14px_26px_-8px_rgba(0,0,0,0.6)] ring-4 ring-honey/70" />
             <div className="min-w-0 flex-1 space-y-3">
               <h1 className="text-5xl font-bold sm:text-6xl">{player.name}</h1>
               {player.bio && <p className="max-w-[55ch] text-lg text-parchment/90">{player.bio}</p>}
@@ -51,6 +53,24 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
                     <strong>{getFaction(favorite).name}</strong>
                   </span>
                 </p>
+              )}
+              {profile.history.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-sm text-parchment/75">Recent finishes, newest first</p>
+                  <ol className="flex flex-wrap gap-1.5">
+                    {profile.history.slice(0, 10).map((h) => (
+                      <li
+                        key={h.gameId}
+                        className="form-dot"
+                        style={{ backgroundColor: FORM_COLORS[h.placement] }}
+                        title={`${ordinal(h.placement)} on ${formatDate(h.playedOn)}`}
+                      >
+                        {h.placement}
+                        <span className="sr-only">{ordinal(h.placement)} place on {formatDate(h.playedOn)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
               {isMe && (
                 <Link href="/account" className="btn secondary small mt-1">

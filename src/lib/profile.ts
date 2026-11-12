@@ -9,6 +9,7 @@ export interface ProfileInput {
   bio: string;
   favoriteFaction: string; // "" when not chosen
   avatar: string; // "" when not chosen
+  avatarBg: string; // faction id, "" when not chosen
 }
 
 const AVATAR_IDS = new Set(AVATARS.map((a) => a.id));
@@ -29,6 +30,7 @@ export function validateProfile(input: ProfileInput): { clean: ProfileInput; err
     bio: input.bio.trim(),
     favoriteFaction: input.favoriteFaction.trim(),
     avatar: input.avatar.trim(),
+    avatarBg: input.avatarBg.trim(),
   };
   const errors: string[] = [];
 
@@ -38,6 +40,7 @@ export function validateProfile(input: ProfileInput): { clean: ProfileInput; err
   if (clean.bio.length > BIO_MAX) errors.push(`Keep your bio under ${BIO_MAX} characters.`);
   if (clean.favoriteFaction && !FACTION_IDS.has(clean.favoriteFaction)) errors.push("Pick a faction from the list.");
   if (clean.avatar && !AVATAR_IDS.has(clean.avatar)) errors.push("Pick an avatar from the list.");
+  if (clean.avatarBg && !FACTION_IDS.has(clean.avatarBg)) errors.push("Pick a background from the list.");
 
   return { clean, errors };
 }

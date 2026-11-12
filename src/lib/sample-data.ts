@@ -43,22 +43,23 @@ const players: Player[] = ROSTER.map((p) => ({
   name: p.name,
   bio: p.bio,
   avatar: p.avatar,
+  avatarBg: p.favorite,
   favoriteFaction: p.favorite,
 }));
 const strengthOf = new Map(ROSTER.map((p, i) => [players[i].id, p.strength]));
 
-// Game nights run every other Thursday. Season 1: Jun 7 – Sep 7. Season 2: Nov 1 – Dec 20.
+// Game nights run every other Sunday. Season 1: Jun 7 – Sep 7. Season 2: Nov 1 – Dec 20.
 const PAST_DATES = [
-  "2026-06-11", "2026-06-25", "2026-07-09", "2026-07-23", "2026-08-06", "2026-08-20", "2026-09-03",
-  "2026-11-05",
+  "2026-06-07", "2026-06-21", "2026-07-05", "2026-07-19", "2026-08-02", "2026-08-16", "2026-08-30",
+  "2026-11-01",
 ];
-const UPCOMING_DATES = ["2026-11-19", "2026-12-03", "2026-12-17"];
+const UPCOMING_DATES = ["2026-11-15", "2026-11-29", "2026-12-13"];
 
 const sessions: Session[] = [...PAST_DATES, ...UPCOMING_DATES].map((date, i) => ({
   id: `s-${i + 1}`,
   date,
   title: "Root League Night",
-  location: "Location TBA",
+  location: "GEEK'D Orlando",
 }));
 
 const games: Game[] = [];

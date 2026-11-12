@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -138,6 +138,13 @@ ok(gcount.rows[0].n === 1, "failed game left nothing behind");
 const homeland = [[p1, "frogs", 1], [p2, "bats", 2], [p3, "knaves", 3], [p4, "marquise", 4]].map(([player_id, faction, placement]) => ({ player_id, faction, placement }));
 await mustWork("a game can use the Homeland factions", () => as("authenticated", who("admin"), () => db.query("select log_game('2026-11-07', null, $1::jsonb)", [JSON.stringify(homeland)])));
 await mustWork("a Homeland faction can be a favorite", () => as("authenticated", who("admin"), () => db.query("update players set favorite_faction='bats' where id=$1", [p1])));
+
+// --- Avatar backgrounds -----------------------------------------------------------------
+const bgSet = await as("authenticated", who("b"), () => db.query("update players set avatar_bg='frogs' where id=$1", [bPlayer]));
+ok(bgSet.affectedRows === 1, "a player can set their own avatar background");
+await mustFail("an unknown avatar background is rejected", () => as("authenticated", who("b"), () => db.query("update players set avatar_bg='dragons' where id=$1", [bPlayer])));
+const bgOther = await as("authenticated", who("c"), () => db.query("update players set avatar_bg='bats' where id=$1", [bPlayer]));
+ok(bgOther.affectedRows === 0, "nobody else can change it");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

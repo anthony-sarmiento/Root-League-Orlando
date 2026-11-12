@@ -65,9 +65,9 @@ const FACTION_DATA: Omit<Faction, "icon" | "pattern">[] = [
   { id: "keepers", name: "Keepers in Iron", color: "#6f7f8f", emoji: "🦡" },
   { id: "hundreds", name: "Lord of the Hundreds", color: "#b5443a", emoji: "🐀" },
   // The Homeland Expansion.
-  { id: "frogs", name: "Lilypad Diaspora", color: "#98a32f", emoji: "🐸" },
-  { id: "bats", name: "Twilight Council", color: "#8a4b66", emoji: "🦇" },
-  { id: "knaves", name: "Knaves of the Deepwood", color: "#3b4f7a", emoji: "🦨" },
+  { id: "frogs", name: "Lilypad Diaspora", color: "#b4a22a", emoji: "🐸" },
+  { id: "bats", name: "Twilight Council", color: "#a06236", emoji: "🦇" },
+  { id: "knaves", name: "Knaves of the Deepwood", color: "#4a5a70", emoji: "🦨" },
 ];
 
 // Icons and patterns are generated into /public by scripts/build-assets.mjs.
@@ -95,6 +95,8 @@ export interface Player {
   favoriteFaction?: FactionId;
   /** Avatar id from src/lib/avatars.generated.ts. */
   avatar?: string;
+  /** Faction whose pattern is drawn behind the avatar. */
+  avatarBg?: FactionId;
 }
 
 /** A player RSVP for a game night. */

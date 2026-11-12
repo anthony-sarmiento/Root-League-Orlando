@@ -1,8 +1,9 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight, Crown, Trophy } from "lucide-react";
 import { Banner } from "@/components/Banner";
+import { CardFan, Embers } from "@/components/CardFan";
 import { FactionBadge } from "@/components/FactionBadge";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { LpScale } from "@/components/LpScale";
@@ -48,17 +49,24 @@ export default async function Home() {
     .map((date) => ({ date, games: games.filter((g) => g.playedOn === date) }));
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-24">
       {/* Hero */}
-      <Banner pattern="alliance">
+      <Banner pattern="alliance" embers>
         <div className="grid items-center gap-8 py-12 sm:py-16 md:grid-cols-[1.1fr_0.9fr] lg:py-20">
           <div className="space-y-6">
-            <h1 className="hero-in text-5xl leading-[1.02] font-bold sm:text-6xl lg:text-7xl">
-              Orlando&apos;s live <span className="text-[#f2c868]">Root</span> league
+            <h1 className="hero-in text-6xl leading-[1] font-bold sm:text-7xl lg:text-8xl">
+              <span className="text-[#f2c868]">Root</span> League
             </h1>
             <p className="hero-in d2 max-w-[52ch] text-lg text-parchment/90 sm:text-xl">
-              Game nights with several tables playing at once, a season-long race for League Points, and a prize pool
-              for whoever finishes on top. New to Root? You&apos;re welcome at the table.
+              Root League is a bi-weekly competitive Root play group that meets Sundays at GEEK&apos;D Orlando. Check
+              out the{" "}
+              <Link
+                href="/sessions"
+                className="font-bold text-[#f2c868] underline decoration-[#f2c868]/50 decoration-2 underline-offset-4 hover:decoration-[#f2c868]"
+              >
+                game night page
+              </Link>{" "}
+              for more information!
             </p>
             <div className="hero-in d3 flex flex-wrap gap-3">
               {viewer ? (
@@ -187,38 +195,20 @@ export default async function Home() {
         </section>
       </div>
 
-      {/* Factions */}
-      <section className="band-dark bleed py-14 sm:py-16">
-        <div className="shell space-y-8">
-          <SectionHeading
-            onDark
-            title={`The ${FACTIONS.length} factions`}
-            description="Every faction plays a different game. Here is how each one has fared across the league."
-            action={
-              <Link href="/factions" className="chip !border-parchment/30 !bg-parchment/10 !text-parchment hover:!bg-parchment/20">
-                Faction stats <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            }
-          />
-          <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {FACTIONS.map((f) => {
-              const stat = factionStats.get(f.id);
-              const style = { "--pattern": `url(${f.pattern})`, "--tint": f.color } as CSSProperties;
-              return (
-                <li key={f.id}>
-                  <Link href="/factions" className="faction-tile h-full" style={style}>
-                    <FactionBadge faction={f.id} size={56} />
-                    <span className="mt-3 font-display text-lg leading-tight font-bold">{f.name}</span>
-                    <span className="mt-0.5 text-sm text-parchment/85">
-                      {stat && stat.games > 0
-                        ? `${pct(stat.winrate)} wins · ${stat.games} ${stat.games === 1 ? "game" : "games"}`
-                        : "No games yet"}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+      {/* The war room */}
+      <section className="band-war bleed py-20 sm:py-28">
+        <Embers count={22} />
+        <div className="shell grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+          <div className="space-y-6">
+            <h2 className="text-4xl leading-[1.05] font-bold sm:text-6xl">
+              Every faction plays <span className="text-[#f2c868]">differently!</span>
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/players" className="btn acorn">Meet the warband</Link>
+              <Link href="/factions" className="btn secondary">Pick a faction</Link>
+            </div>
+          </div>
+          <CardFan cards={["frog", "talon", "throne", "knave", "vagabond", "mole", "quest"]} size="lg" alive />
         </div>
       </section>
 
@@ -247,8 +237,17 @@ export default async function Home() {
                       {[...g.results]
                         .sort((a, b) => a.placement - b.placement)
                         .map((r) => (
-                          <li key={r.playerId} className="flex items-center gap-3">
-                            <span className="w-9 text-sm font-bold text-bark-soft">{ordinal(r.placement)}</span>
+                          <li
+                            key={r.playerId}
+                            className={`flex items-center gap-3 rounded-xl px-2 py-1 ${r.placement === 1 ? "-mx-2 bg-honey/25 font-bold" : ""}`}
+                          >
+                            <span className="w-9 text-sm font-bold text-bark-soft">
+                              {r.placement === 1 ? (
+                                <Crown size={20} className="text-acorn-deep" aria-label="1st" />
+                              ) : (
+                                ordinal(r.placement)
+                              )}
+                            </span>
                             <FactionBadge faction={r.faction} size={30} />
                             <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
                               {playerById.get(r.playerId)?.name ?? "Unknown"}
@@ -263,6 +262,41 @@ export default async function Home() {
           ))}
         </section>
       )}
+
+      {/* Factions */}
+      <section className="band-dark bleed py-14 sm:py-16">
+        <div className="shell space-y-8">
+          <SectionHeading
+            onDark
+            title={`The ${FACTIONS.length} factions`}
+            description="Current League Faction Winrates"
+            action={
+              <Link href="/factions" className="chip !border-parchment/30 !bg-parchment/10 !text-parchment hover:!bg-parchment/20">
+                Faction stats <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            }
+          />
+          <ul className="tilt-tiles grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+            {FACTIONS.map((f) => {
+              const stat = factionStats.get(f.id);
+              const style = { "--pattern": `url(${f.pattern})`, "--tint": f.color } as CSSProperties;
+              return (
+                <li key={f.id}>
+                  <Link href="/factions" className="faction-tile h-full" style={style}>
+                    <span className="faction-icon inline-flex w-fit"><FactionBadge faction={f.id} size={56} /></span>
+                    <span className="mt-3 font-display text-lg leading-tight font-bold">{f.name}</span>
+                    <span className="mt-0.5 text-sm text-parchment/85">
+                      {stat && stat.games > 0
+                        ? `${pct(stat.winrate)} wins · ${stat.games} ${stat.games === 1 ? "game" : "games"}`
+                        : "No games yet"}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }

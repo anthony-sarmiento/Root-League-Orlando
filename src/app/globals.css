@@ -426,3 +426,258 @@ textarea.field { min-height: 6rem; resize: vertical; }
 @media (max-width: 767px) {
   .banner::before { opacity: 0.2; }
 }
+
+/* ---------------------------------------------------------- Liveliness layer */
+
+/* Links in dark bands: the underline draws in from the left. */
+.draw-link {
+  background: linear-gradient(var(--color-honey), var(--color-honey)) 0 100% / 0 2px no-repeat;
+  padding-bottom: 3px;
+  transition: background-size 0.3s var(--ease-out);
+}
+.draw-link:hover, .draw-link:focus-visible { background-size: 100% 2px; }
+
+.footer-folk { transition: transform 0.35s var(--ease-out); }
+.footer-folk:hover { transform: translateY(-6px) rotate(-4deg); }
+
+/* Bars and podium steps grow into place as their section scrolls into view. Without scroll-driven
+   animation support they simply sit at full size, so nothing is ever hidden. */
+@keyframes grow-up { from { transform: scaleY(0.04); } to { transform: none; } }
+@keyframes grow-x { from { transform: scaleX(0.02); } to { transform: none; } }
+@keyframes float-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes seat-pop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+
+.grow-up { transform-origin: bottom; }
+.grow-x { transform-origin: left; }
+
+@supports (animation-timeline: view()) {
+  .grow-up, .grow-x, .float-in {
+    animation-fill-mode: both;
+    animation-timing-function: var(--ease-out);
+    animation-timeline: view();
+    animation-range: entry 5% entry 70%;
+  }
+  .grow-up { animation-name: grow-up; }
+  .grow-x { animation-name: grow-x; }
+  .float-in { animation-name: float-in; }
+}
+
+/* Seats at a table pop in one after another when the card first shows. */
+.seat { animation: seat-pop 0.45s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms + 200ms); }
+
+/* A faction tile wakes up on hover: the icon turns, the pattern drifts. */
+.faction-tile { background-position: 0 0; transition: transform 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out), background-position 0.9s var(--ease-out); }
+.faction-tile:hover { background-position: 60px 40px; }
+.faction-tile .faction-icon { transition: transform 0.35s var(--ease-out); }
+.faction-tile:hover .faction-icon { transform: scale(1.12) rotate(-6deg); }
+
+/* Link cards: the portrait leans in, the name's underline draws. */
+.lift-card { transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out); }
+.lift-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+.lift-card .lean { transition: transform 0.35s var(--ease-out); }
+.lift-card:hover .lean { transform: scale(1.08) rotate(-3deg); }
+.lift-card .name-draw {
+  background: linear-gradient(var(--color-leaf), var(--color-leaf)) 0 100% / 0 3px no-repeat;
+  transition: background-size 0.35s var(--ease-out);
+}
+.lift-card:hover .name-draw, .lift-card:focus-visible .name-draw { background-size: 100% 3px; }
+
+/* Leaderboard: the signed-in player's own row, and the LP bar behind each score. */
+.woods-table tr.me td { background: rgba(226, 176, 74, 0.2); }
+.woods-table tr.me td:first-child { border-radius: 0.75rem 0 0 0.75rem; }
+.woods-table tr.me td:last-child { border-radius: 0 0.75rem 0.75rem 0; }
+.lp-track { height: 6px; width: 100%; min-width: 3rem; border-radius: 999px; background: rgba(75, 52, 38, 0.12); overflow: hidden; }
+.lp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-leaf), var(--color-honey)); }
+
+/* Segmented sorter on the players page. */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; border-radius: 999px; background: var(--color-parchment-deep); border: 1.5px solid rgba(75, 52, 38, 0.2); padding: 0.2rem; }
+.seg button { border-radius: 999px; padding: 0.3rem 0.85rem; min-height: 2.25rem; font-size: 0.875rem; font-weight: 700; transition: background 0.2s, color 0.2s; cursor: pointer; }
+.seg button:hover { background: rgba(75, 52, 38, 0.1); }
+.seg button[aria-pressed="true"] { background: #4b6a2c; color: #fffaf0; }
+
+/* Recent-form dots on a player's profile. */
+.form-dot { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 999px; font-weight: 800; font-size: 0.85rem; color: var(--color-night); border: 2px solid rgba(255, 250, 240, 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  .grow-up, .grow-x, .float-in { animation: none; }
+  .seat { animation: none; }
+  .faction-tile, .faction-tile .faction-icon, .lift-card, .lift-card .lean, .footer-folk { transition: none; }
+  .faction-tile:hover, .faction-tile:hover .faction-icon, .lift-card:hover, .lift-card:hover .lean, .footer-folk:hover { transform: none; }
+}
+
+/* A short strip of a faction's pattern, used as the top of a player card. */
+.pattern-strip {
+  position: relative;
+  height: 5rem;
+  background-color: var(--color-forest-deep);
+  background-image: var(--pattern);
+  background-size: 320px auto;
+  background-position: center;
+}
+.pattern-strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(27, 42, 23, 0.25), rgba(27, 42, 23, 0.6));
+}
+.lift-card:hover .pattern-strip { background-position: 40px 20px; }
+.pattern-strip { transition: background-position 0.8s var(--ease-out); }
+
+/* ------------------------------------------------------------------ Chaos layer */
+
+/* Embers drifting up out of a dark band. Decorative; they rest under reduced motion. */
+@keyframes ember-rise {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
+  12% { opacity: 0.95; }
+  100% { transform: translate3d(var(--drift, 20px), -460px, 0) scale(0.3); opacity: 0; }
+}
+.embers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.ember {
+  position: absolute;
+  bottom: -12px;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 999px;
+  background: radial-gradient(circle, #ffe3a3 0%, #f2a33a 55%, rgba(242, 163, 58, 0) 72%);
+  opacity: 0;
+  animation: ember-rise var(--d) linear var(--delay) infinite;
+}
+
+/* A war-room band: scorched red-brown, lit from below. */
+.band-war {
+  position: relative;
+  isolation: isolate;
+  --edge: #24100d;
+  color: var(--color-parchment);
+  background:
+    radial-gradient(70% 90% at 78% 110%, rgba(240, 140, 50, 0.45), transparent 65%),
+    radial-gradient(50% 60% at 8% 0%, rgba(181, 68, 58, 0.35), transparent 70%),
+    linear-gradient(180deg, #3b1a14 0%, #24100d 100%);
+}
+.band-war::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 14px 0, var(--edge) 13px, transparent 13.5px) 0 0 / 28px 14px repeat-x;
+}
+
+/* A hand of cards, fanned out. Hover the hand and it spreads; hover a card and it jumps. */
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+.fan {
+  --spread: 1;
+  --step: 8deg;
+  --gap: 44px;
+  --w: 150px;
+  position: relative;
+  height: calc(var(--w) * 1.55);
+  width: 100%;
+  max-width: calc(var(--w) * 4.2);
+  margin-inline: auto;
+}
+.fan:hover { --spread: 1.35; }
+.fan-card {
+  --o: calc(var(--i) - (var(--n) - 1) / 2);
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--w);
+  margin-left: calc(var(--w) / -2);
+  transform-origin: 50% 120%;
+  transform: translateX(calc(var(--o) * var(--gap) * var(--spread))) translateY(calc(var(--o) * var(--o) * 7px))
+    rotate(calc(var(--o) * var(--step) * var(--spread)));
+  transition: transform 0.55s var(--ease-out);
+  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.45));
+  z-index: var(--z, 0);
+}
+.fan-card:hover {
+  z-index: 20;
+  transform: translateX(calc(var(--o) * var(--gap) * var(--spread))) translateY(-30px) rotate(calc(var(--o) * var(--step) * 0.4));
+}
+.fan.alive .fan-card > span { display: block; animation: bob 4.5s ease-in-out calc(var(--i) * -0.7s) infinite alternate; }
+.fan-card img { display: block; width: 100%; height: auto; }
+.fan.sm { --w: 112px; --gap: 34px; --step: 9deg; }
+.fan.lg { --w: 120px; --gap: 36px; --step: 7deg; }
+@media (min-width: 640px) { .fan.lg { --w: 140px; --gap: 44px; } }
+@media (min-width: 1280px) { .fan.lg { --w: 176px; --gap: 54px; } }
+
+/* Faction tiles lean at their own angles, like a pile of dispatches, and straighten when you reach for one. */
+.tilt-tiles > li:nth-child(odd) .faction-tile { rotate: -1.1deg; }
+.tilt-tiles > li:nth-child(even) .faction-tile { rotate: 1.2deg; }
+.tilt-tiles > li:nth-child(3n) { margin-top: 0.75rem; }
+.tilt-tiles .faction-tile { transition: transform 0.3s var(--ease-out), rotate 0.3s var(--ease-out), border-color 0.2s, box-shadow 0.3s var(--ease-out), background-position 0.9s var(--ease-out); }
+.tilt-tiles .faction-tile:hover { rotate: 0deg; }
+
+/* Trading-card style player cards. */
+.trade-card {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 3px solid var(--tint, var(--color-bark));
+  background: var(--color-paper);
+  box-shadow: var(--shadow-card);
+  rotate: var(--lean, 0deg);
+  transition: transform 0.3s var(--ease-out), rotate 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+}
+.trade-card:hover { rotate: 0deg; transform: translateY(-6px); box-shadow: var(--shadow-lift); }
+/* A sheen sweeps across the card on hover. */
+.trade-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.5) 48%, transparent 61%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.trade-card:hover::after { transform: translateX(120%); transition: transform 0.9s var(--ease-out); }
+.trade-art {
+  position: relative;
+  height: 12rem;
+  overflow: hidden;
+  background-color: var(--color-forest-deep);
+  background-image: var(--pattern);
+  background-size: 360px auto;
+  background-position: center;
+  border-bottom: 3px solid var(--tint, var(--color-bark));
+}
+.trade-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 250, 240, 0.32), transparent 60%);
+  pointer-events: none;
+}
+.trade-art img { position: relative; z-index: 2; }
+.trade-card .portrait { transition: transform 0.5s var(--ease-out); }
+.trade-card:hover .portrait { transform: scale(1.08); }
+.trade-plate {
+  position: relative;
+  margin: -0.9rem 0.75rem 0;
+  z-index: 3;
+  border-radius: 0.75rem;
+  background: linear-gradient(#fffaf0, #f3e6c8);
+  border: 2px solid var(--tint, var(--color-bark));
+  padding: 0.3rem 0.8rem;
+  text-align: center;
+  box-shadow: 0 6px 10px -6px rgba(75, 52, 38, 0.5);
+}
+.stat-cell { text-align: center; }
+.stat-cell dt { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-bark-soft); }
+.stat-cell dd { font-family: var(--font-display), Georgia, serif; font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ember { display: none; }
+  .fan-card, .fan-card:hover, .trade-card, .trade-card:hover, .trade-card .portrait, .tilt-tiles .faction-tile { transition: none; }
+  .fan.alive .fan-card > span { animation: none; }
+  .trade-card::after { display: none; }
+  .trade-card:hover .portrait { transform: none; }
+}

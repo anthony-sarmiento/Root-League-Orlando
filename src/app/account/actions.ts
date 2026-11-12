@@ -19,10 +19,19 @@ function readProfile(formData: FormData): ProfileInput {
     bio: text(formData, "bio"),
     favoriteFaction: text(formData, "favoriteFaction"),
     avatar: text(formData, "avatar"),
+    avatarBg: text(formData, "avatarBg"),
   };
 }
 
 const refresh = () => revalidatePath("/", "layout");
+
+// Postgres/PostgREST codes for "that column doesn't exist": the avatar-background migration hasn't been run.
+const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
+
+async function myPlayerId(supabase: Awaited<ReturnType<typeof createServerSupabase>>, userId: string) {
+  const { data } = await supabase.from("player_accounts").select("player_id").eq("user_id", userId).maybeSingle();
+  return data?.player_id ?? "";
+}
 
 export async function createProfile(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const viewer = await getViewer();
@@ -49,6 +58,15 @@ export async function createProfile(_prev: ProfileState, formData: FormData): Pr
     return { errors: ["Couldn't create your profile. Please try again."] };
   }
 
+  // The background lives in its own column, so it is saved separately: a database that hasn't had the
+  // avatar-background migration yet still creates the profile.
+  if (clean.avatarBg) {
+    await supabase
+      .from("players")
+      .update({ avatar_bg: clean.avatarBg })
+      .eq("id", await myPlayerId(supabase, viewer.userId));
+  }
+
   refresh();
   redirect("/account");
 }
@@ -62,16 +80,21 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
   if (errors.length) return { errors };
 
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const fields = {
+    name: clean.name,
+    bio: clean.bio || null,
+    favorite_faction: clean.favoriteFaction || null,
+    avatar: clean.avatar || null,
+  };
+  let { data, error } = await supabase
     .from("players")
-    .update({
-      name: clean.name,
-      bio: clean.bio || null,
-      favorite_faction: clean.favoriteFaction || null,
-      avatar: clean.avatar || null,
-    })
+    .update({ ...fields, avatar_bg: clean.avatarBg || null })
     .eq("id", viewer.player.id)
     .select("id");
+  if (error && MISSING_COLUMN.has(error.code ?? "")) {
+    // Not migrated yet: save everything except the background.
+    ({ data, error } = await supabase.from("players").update(fields).eq("id", viewer.player.id).select("id"));
+  }
 
   if (error) {
     console.error("[update-profile] failed:", error.code, error.message);

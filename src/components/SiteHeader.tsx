@@ -20,7 +20,7 @@ export async function SiteHeader() {
               href="/account"
               className="inline-flex items-center gap-2 rounded-full bg-black/20 py-1 pr-4 pl-1 font-bold text-parchment transition-colors hover:bg-black/30"
             >
-              <Avatar name={viewer.player?.name ?? viewer.email ?? "Me"} avatar={viewer.player?.avatar} size={34} />
+              <Avatar name={viewer.player?.name ?? viewer.email ?? "Me"} avatar={viewer.player?.avatar} bg={viewer.player?.avatarBg} size={34} />
               <span className="max-w-32 truncate">{viewer.player?.name ?? "My account"}</span>
             </Link>
           ) : isSupabaseConfigured ? (

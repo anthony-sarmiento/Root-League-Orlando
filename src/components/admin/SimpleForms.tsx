@@ -48,7 +48,7 @@ export function AddSessionForm({ today }: { today: string }) {
       </label>
       <label className="block">
         <span className="text-sm font-bold">Location</span>
-        <input name="location" placeholder="Location TBA" className="field mt-1" />
+        <input name="location" placeholder="GEEK'D Orlando" className="field mt-1" />
       </label>
       <FormMessages state={state} />
       <button type="submit" disabled={pending} className="btn">

@@ -27,7 +27,8 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
       <PageHeader
         title="Factions"
         pattern="eyrie"
-        description={`Which woodland powers are winning? In a ${PLAYERS_PER_GAME}-player game an evenly matched faction wins ${pct(fairShare)} of the time; the tick on each bar marks that line.`}
+        cards={["frog", "knave", "key"]}
+        description="Current League Faction Winrates"
       >
         <SeasonPicker basePath="/factions" seasons={seasons} selected={selected} includeAll />
       </PageHeader>
@@ -63,7 +64,7 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                             aria-label={`${pct(r.winrate)} win rate`}
                           >
                             <div
-                              className="h-full rounded-full"
+                              className="grow-x h-full rounded-full"
                               style={{ width: `${Math.min(100, r.winrate * 100)}%`, backgroundColor: faction.color }}
                             />
                             <span
@@ -85,7 +86,7 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                           href={`/players/${r.topPlayer.player.id}`}
                           className="inline-flex items-center gap-2 font-semibold hover:text-moss-deep"
                         >
-                          <Avatar name={top.name} avatar={top.avatar} size={28} />
+                          <Avatar name={top.name} avatar={top.avatar} bg={top.avatarBg} size={28} />
                           {top.name} <span className="text-sm text-bark-soft">({r.topPlayer.wins})</span>
                         </Link>
                       ) : (
@@ -98,6 +99,10 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
             </tbody>
           </table>
         </div>
+        <p className="border-t-2 border-dashed border-bark/15 px-5 py-4 text-sm text-bark-soft">
+          In a {PLAYERS_PER_GAME}-player game an evenly matched faction wins {pct(fairShare)} of the time. The tick on
+          each bar marks that line.
+        </p>
       </section>
     </div>
   );

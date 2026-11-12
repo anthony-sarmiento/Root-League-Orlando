@@ -18,6 +18,7 @@ export function ProfileForm({ mode, initial }: Props) {
     {},
   );
   const [bio, setBio] = useState(initial?.bio ?? "");
+  const [name, setName] = useState(initial?.name ?? "");
 
   return (
     <form
@@ -36,7 +37,8 @@ export function ProfileForm({ mode, initial }: Props) {
           required
           maxLength={NAME_MAX}
           autoComplete="nickname"
-          defaultValue={initial?.name ?? ""}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           className="field mt-1"
         />
         <span className="mt-1 block text-sm text-bark-soft">This is what everyone sees on the leaderboard.</span>
@@ -69,7 +71,7 @@ export function ProfileForm({ mode, initial }: Props) {
         </span>
       </label>
 
-      <AvatarPicker defaultValue={initial?.avatar ?? ""} />
+      <AvatarPicker name={name} defaultAvatar={initial?.avatar ?? ""} defaultBg={initial?.avatarBg} />
 
       <FormMessages state={state} />
       <button type="submit" disabled={pending} className="btn">

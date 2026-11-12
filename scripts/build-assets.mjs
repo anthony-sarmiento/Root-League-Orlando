@@ -49,10 +49,10 @@ const FACTION_ICONS = {
   duchy: "faction-duchy.png",
   keepers: "faction-keepers.png",
   hundreds: "faction-lord of the hundreds.png",
-  // Homeland Expansion: no official faction icons were supplied, so these use the species illustrations.
-  frogs: "pic8700754.webp",
-  bats: "pic8700758.webp",
-  knaves: "pic8491843.webp",
+  // Homeland Expansion
+  frogs: "Lilypad_Diaspora_-_Symbol.webp",
+  bats: "Twilight_Council_-_Symbol.webp",
+  knaves: "Knaves_of_the_Deepwood_-_Symbol.webp",
 };
 for (const [id, file] of Object.entries(FACTION_ICONS)) {
   toWebp(find(file), path.join(PUBLIC, "factions", `${id}.webp`), { maxW: 192, quality: 85 });
@@ -80,6 +80,25 @@ for (const [id, file] of Object.entries(FACTION_PATTERNS)) {
 
 // ---- Hero art -----------------------------------------------------
 toWebp(find("141.png"), path.join(PUBLIC, "art", "hero.webp"), { maxW: 520, quality: 85 });
+// Card art for the decorative card fans (names are the output ids).
+const CARDS = {
+  throne: "LotH Moods.png",
+  talon: "Eyrie Leader.png",
+  vagabond: "Vagabond Card Back.png",
+  frog: "Frog Back.png",
+  knave: "Knaveback.png",
+  mole: "Ministers.png",
+  quest: "Quest.png",
+  deck: "Base Deck.png",
+  exiles: "Exiles & Partisans Scan.png",
+  melee: "S&D Back.png",
+  turn: "Turn Order.png",
+  setup: "ADSET.png",
+  key: "Faithful Retainer.png",
+};
+for (const [id, file] of Object.entries(CARDS)) {
+  toWebp(find(file), path.join(PUBLIC, "art", "cards", `${id}.webp`), { maxW: 340, maxH: 480, quality: 76 });
+}
 // Tiny woodland-folk icons, used as decorative bullets.
 for (const [id, file] of Object.entries({ bunny: "Bunny_Icon.png", fox: "Fox_Icon.png", mouse: "Mouse_Icon.png" })) {
   toWebp(find(file), path.join(PUBLIC, "art", `${id}.webp`), { maxW: 96, quality: 90 });
@@ -112,7 +131,7 @@ const avatars = portraits.map((p) => {
   let id = slug(p.name);
   if (used.has(id)) id = `${id}-${slug(p.group)}`;
   used.add(id);
-  toWebp(p.file, path.join(PUBLIC, "avatars", `${id}.webp`), { maxW: 256, quality: 82 });
+  toWebp(p.file, path.join(PUBLIC, "avatars", `${id}.webp`), { maxW: 320, quality: 80 });
   return { id, name: p.name, group: p.group, src: `/avatars/${id}.webp` };
 });
 

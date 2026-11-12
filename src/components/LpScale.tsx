@@ -23,7 +23,7 @@ export function LpScale() {
               <span className="ml-0.5 text-base font-semibold text-bark-soft">LP</span>
             </span>
             <span
-              className="mt-1 w-full rounded-t-xl border-2 border-b-0 border-bark/25"
+              className="grow-up mt-1 w-full rounded-t-xl border-2 border-b-0 border-bark/25"
               style={{ height: 28 + (lp / max) * 64, backgroundColor: STEP_COLORS[place] }}
               aria-hidden="true"
             />

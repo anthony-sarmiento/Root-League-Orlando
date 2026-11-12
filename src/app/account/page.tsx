@@ -69,7 +69,7 @@ export default async function AccountPage() {
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="card p-5 sm:p-7">
             <div className="mb-5 flex items-center gap-4">
-              <Avatar name={me.name} avatar={me.avatar} size={64} />
+              <Avatar name={me.name} avatar={me.avatar} bg={me.avatarBg} size={72} />
               <h2 className="text-2xl font-bold">Your profile</h2>
             </div>
             <ProfileForm mode="edit" initial={me} />

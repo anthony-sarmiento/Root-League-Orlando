@@ -64,6 +64,7 @@ interface PlayerRow {
   bio?: string | null;
   favorite_faction?: string | null;
   avatar?: string | null;
+  avatar_bg?: string | null;
 }
 
 interface GameRow {
@@ -81,11 +82,28 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
       () =>
         fetchAll<PlayerRow>(
           (from, to) =>
-            db.from("players").select("id, name, bio, favorite_faction, avatar").order("name").range(from, to),
+            db
+              .from("players")
+              .select("id, name, bio, favorite_faction, avatar, avatar_bg")
+              .order("name")
+              .range(from, to),
           "players",
         ),
-      // Database not migrated to profiles yet: plain names only.
-      () => fetchAll<PlayerRow>((from, to) => db.from("players").select("id, name").order("name").range(from, to), "players"),
+      // Avatar backgrounds not migrated yet: profiles without them, and if profiles aren't migrated either, plain names.
+      () =>
+        orFallback(
+          () =>
+            fetchAll<PlayerRow>(
+              (from, to) =>
+                db.from("players").select("id, name, bio, favorite_faction, avatar").order("name").range(from, to),
+              "players",
+            ),
+          () =>
+            fetchAll<PlayerRow>(
+              (from, to) => db.from("players").select("id, name").order("name").range(from, to),
+              "players",
+            ),
+        ),
     ),
     fetchAll<{ id: string; date: string; title: string; location: string }>(
       (from, to) => db.from("sessions").select("id, date, title, location").order("date").range(from, to),
@@ -131,6 +149,7 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
       bio: p.bio ?? undefined,
       favoriteFaction: asFactionId(p.favorite_faction),
       avatar: p.avatar ?? undefined,
+      avatarBg: asFactionId(p.avatar_bg),
     })),
     sessions,
     games: games.map((g) => ({

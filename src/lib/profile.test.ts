@@ -3,7 +3,7 @@ import { AVATARS } from "./avatars.generated";
 import { validateProfile } from "./profile";
 import { validateSeasonInput } from "./season-input";
 
-const base = { name: "Bramble", bio: "", favoriteFaction: "", avatar: "" };
+const base = { name: "Bramble", bio: "", favoriteFaction: "", avatar: "", avatarBg: "" };
 
 describe("validateProfile", () => {
   it("accepts a minimal profile and trims whitespace", () => {
@@ -26,6 +26,11 @@ describe("validateProfile", () => {
     expect(validateProfile({ ...base, favoriteFaction: "eyrie", avatar: AVATARS[0].id }).errors).toEqual([]);
     expect(validateProfile({ ...base, favoriteFaction: "dragons" }).errors).toContain("Pick a faction from the list.");
     expect(validateProfile({ ...base, avatar: "../../etc/passwd" }).errors).toContain("Pick an avatar from the list.");
+  });
+
+  it("only allows real factions as an avatar background", () => {
+    expect(validateProfile({ ...base, avatarBg: "frogs" }).errors).toEqual([]);
+    expect(validateProfile({ ...base, avatarBg: "dragons" }).errors).toContain("Pick a background from the list.");
   });
 
   it("ships a healthy avatar set with unique ids", () => {

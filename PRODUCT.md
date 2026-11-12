@@ -34,12 +34,12 @@ A local, in-person Root league with two-month seasons, a prize pool for the seas
 - Must be usable first on phones.
 - Faction identity is never color alone: always pair color with the faction's name or icon.
 - Site is public to read; accounts are optional and only needed to RSVP and have a profile.
-- Undecided facts (do not invent): the game night venue beyond what organizers enter, the prize pool amount and how it is funded.
+- Known: Root League is a bi-weekly competitive Root play group that meets Sundays at GEEK'D Orlando. Undecided facts (do not invent): start time, the prize pool amount and how it is funded.
 
 ## Brand Commitments
 - Name: **Root League Orlando**.
 - Tone: cute and woodland-themed, matching the board game. This is a stated commitment from the league owner; specific visual choices are not yet binding.
-- The league owner has permission to use Root's official iconography. Footer credits Leder Games, used with permission.
+- The league owner has permission to use Root's official iconography. The footer credits Leder Games as the copyright holder; the owner dislikes the words "used with permission", so they are not printed.
 
 ## Evidence on Hand
 - Official Root artwork (used with permission) is in `/assets` (not committed) and processed into `public/` by `scripts/build-assets.mjs`: faction head icons and patterned backgrounds, a hero illustration of the Woodland Alliance, and 70+ character portraits used as player avatars.

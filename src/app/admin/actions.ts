@@ -86,7 +86,7 @@ export async function addSession(_prev: FormState, formData: FormData): Promise<
 
   const date = text(formData, "date");
   const title = text(formData, "title") || "Root League Night";
-  const location = text(formData, "location") || "Location TBA";
+  const location = text(formData, "location") || "GEEK'D Orlando";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
     return { errors: ["Pick a valid date."] };
   }

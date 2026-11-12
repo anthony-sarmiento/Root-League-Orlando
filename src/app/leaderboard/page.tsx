@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Podium } from "@/components/Podium";
 import { SeasonPicker, parseSeasonParam } from "@/components/SeasonPicker";
 import { getLeagueData } from "@/lib/data";
+import { getViewer } from "@/lib/viewer";
 import { featuredSeason, seasonPhase, todayISO } from "@/lib/seasons";
 import { buildLeaderboard, gamesInSeason } from "@/lib/stats";
 
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage({ searchParams }: PageProps<"/leaderboard">) {
   const { season: seasonParam } = await searchParams;
-  const { players, games, seasons } = await getLeagueData();
+  const [{ players, games, seasons }, viewer] = await Promise.all([getLeagueData(), getViewer()]);
   const today = todayISO();
   const featured = featuredSeason(seasons, today);
   const selected = parseSeasonParam(
@@ -32,6 +33,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
       <PageHeader
         title="Leaderboard"
         pattern="marquise"
+        cards={["throne", "talon", "mole"]}
         description="Every game earns league points. When a season ends, the player with the most LP wins the prize pool."
       >
         <SeasonPicker basePath="/leaderboard" seasons={seasons} selected={selected} />
@@ -53,19 +55,25 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
         </p>
       )}
 
-      {rows.length > 0 && (
-        <section className="card p-5 sm:p-7">
-          <Podium rows={rows} players={players} />
-        </section>
-      )}
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        {rows.length > 0 && (
+          <section className="card p-5 sm:p-7 xl:sticky xl:top-6">
+            <h2 className="mb-6 text-2xl font-bold">The podium</h2>
+            <div className="mx-auto max-w-md xl:max-w-none">
+              <Podium rows={rows} players={players} />
+            </div>
+          </section>
+        )}
 
-      <section className="card">
-        <LeaderboardTable
-          rows={rows}
-          players={players}
-          emptyMessage={season ? "No games played in this season yet. The woods are quiet…" : "No season has been set up yet."}
-        />
-      </section>
+        <section className={`card ${rows.length === 0 ? "xl:col-span-2" : ""}`}>
+          <LeaderboardTable
+            rows={rows}
+            players={players}
+            highlightId={viewer?.player?.id}
+            emptyMessage={season ? "No games played in this season yet. The woods are quiet…" : "No season has been set up yet."}
+          />
+        </section>
+      </div>
 
       <section className="card p-5 sm:p-7">
         <h2 className="text-2xl font-bold">How league points work</h2>
