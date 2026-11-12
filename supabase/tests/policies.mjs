@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -176,6 +176,81 @@ const lonely = (await as("authenticated", who("admin"), () => db.query("insert i
 const delByAdmin = await as("authenticated", who("admin"), () => db.query("delete from players where id=$1", [lonely]));
 ok(delByAdmin.affectedRows === 1, "an organizer can remove a player with no games");
 await mustFail("a player with games cannot be removed", () => as("authenticated", who("admin"), () => db.query("delete from players where id=$1", [p1])));
+
+// --- Rounds and tables of three -----------------------------------------------------------
+const seat = (player_id, faction, placement) => ({ player_id, faction, placement });
+const logAs = (who_, args) => as("authenticated", who(who_), () => db.query("select log_game($1, $2, $3::jsonb, $4::smallint) as id", args));
+const night = (await as("authenticated", who("admin"), () => db.query("insert into sessions (date) values ('2026-11-08') returning id"))).rows[0].id;
+const trio = [seat(p1, "marquise", 1), seat(p2, "eyrie", 2), seat(p3, "alliance", 3)];
+const trioGame = await logAs("admin", ["2026-11-08", night, JSON.stringify(trio), 2]);
+ok(Boolean(trioGame.rows[0].id), "an organizer can log a table of three in round 2");
+const roundCheck = await db.query("select round from games where id=$1", [trioGame.rows[0].id]);
+ok(roundCheck.rows[0].round === 2, "the round is saved");
+await mustFail("a table of two is rejected", () => logAs("admin", ["2026-11-08", night, JSON.stringify(trio.slice(0, 2)), 1]));
+await mustFail("a table of three needs places 1 to 3", () => logAs("admin", ["2026-11-08", night, JSON.stringify([seat(p1, "marquise", 1), seat(p2, "eyrie", 2), seat(p3, "alliance", 4)]), 1]));
+await mustFail("round 5 is rejected", () => logAs("admin", ["2026-11-08", night, JSON.stringify(trio), 5]));
+await mustFail("a regular player cannot log a table", () => logAs("c", ["2026-11-08", night, JSON.stringify(trio), 1]));
+const fixed = [seat(p3, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3), seat(p4, "vagabond", 4)];
+await mustWork("an organizer can edit a game into a table of four", () => as("authenticated", who("admin"), () => db.query("select update_game($1, '2026-11-08', $2, $3::jsonb, 1::smallint)", [trioGame.rows[0].id, night, JSON.stringify(fixed)])));
+const afterEdit = await db.query("select count(*)::int n from game_results where game_id=$1", [trioGame.rows[0].id]);
+ok(afterEdit.rows[0].n === 4, "the edit replaced the results");
+await mustFail("a regular player cannot edit a game", () => as("authenticated", who("c"), () => db.query("select update_game($1, '2026-11-08', $2, $3::jsonb, 1::smallint)", [trioGame.rows[0].id, night, JSON.stringify(fixed)])));
+const nightEdit = await as("authenticated", who("admin"), () => db.query("update sessions set title='Renamed night', location='Elsewhere' where id=$1", [night]));
+ok(nightEdit.affectedRows === 1, "an organizer can edit a game night");
+await mustWork("an organizer can delete a game night", () => as("authenticated", who("admin"), () => db.query("delete from sessions where id=$1", [night])));
+const afterNightDelete = await db.query("select session_id from games where id=$1", [trioGame.rows[0].id]);
+ok(afterNightDelete.rows[0].session_id === null, "its games stay on the books");
+
+// --- Player-reported games ------------------------------------------------------------------
+const dPlayer = (await db.query("select player_id from player_accounts where user_id=$1", [ids.d])).rows[0].player_id;
+const reportTable = (extra = {}) => [seat(bPlayer, "marquise", 1), seat(dPlayer, "eyrie", 2), seat(p1, "alliance", 3), seat(p2, "vagabond", 4)].map((s) => ({ ...s, ...extra }));
+const submit = (user, args) => as("authenticated", who(user), () => db.query("select submit_game_report($1, null, $2::smallint, $3::jsonb, $4) as id", args));
+const gamesBefore = (await db.query("select count(*)::int n from games")).rows[0].n;
+
+const report1 = (await mustWork("a player can report a table they played in", () => submit("b", ["2026-11-01", 1, JSON.stringify(reportTable()), "We played at the back"]))).rows[0].id;
+const stillSame = (await db.query("select count(*)::int n from games")).rows[0].n;
+ok(stillSame === gamesBefore, "a report does not change the standings");
+await mustFail("a player cannot report a table they were not at", () => submit("b", ["2026-11-01", 1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)]), null]));
+await mustFail("a report dated in the future is rejected", () => submit("b", ["2099-01-01", 1, JSON.stringify(reportTable()), null]));
+await mustFail("a report with a repeated faction is rejected", () => submit("b", ["2026-11-01", 1, JSON.stringify([seat(bPlayer, "marquise", 1), seat(dPlayer, "marquise", 2), seat(p1, "alliance", 3)]), null]));
+await mustFail("a report with an unknown faction is rejected", () => submit("b", ["2026-11-01", 1, JSON.stringify([seat(bPlayer, "dragons", 1), seat(dPlayer, "eyrie", 2), seat(p1, "alliance", 3)]), null]));
+await mustFail("a report with skipped places is rejected", () => submit("b", ["2026-11-01", 1, JSON.stringify([seat(bPlayer, "marquise", 1), seat(dPlayer, "eyrie", 2), seat(p1, "alliance", 4)]), null]));
+await mustFail("a report with an unknown player is rejected", () => submit("b", ["2026-11-01", 1, JSON.stringify([seat(bPlayer, "marquise", 1), seat(dPlayer, "eyrie", 2), seat("00000000-0000-0000-0000-000000000000", "alliance", 3)]), null]));
+await mustFail("a signed-out visitor cannot report", () => as("anon", null, () => db.query("select submit_game_report('2026-11-01', null, 1::smallint, $1::jsonb, null)", [JSON.stringify(reportTable())])));
+await mustFail("a user with no profile cannot report", () => as("authenticated", who("c"), () => db.query("select submit_game_report('2026-11-01', null, 1::smallint, $1::jsonb, null)", [JSON.stringify(reportTable())])));
+await mustFail("a player cannot insert a report directly", () => as("authenticated", who("b"), () => db.query("insert into game_reports (reporter_player_id, played_on, results) values ($1, '2026-11-01', $2::jsonb)", [bPlayer, JSON.stringify(reportTable())])));
+
+const mine = await as("authenticated", who("b"), () => db.query("select count(*)::int n from game_reports"));
+ok(mine.rows[0].n === 1, "a player sees their own report");
+const theirs = await as("authenticated", who("d"), () => db.query("select count(*)::int n from game_reports"));
+ok(theirs.rows[0].n === 0, "another player does not see it");
+const everyone = await as("authenticated", who("admin"), () => db.query("select count(*)::int n from game_reports"));
+ok(everyone.rows[0].n === 1, "an organizer sees every report");
+const anonSees = await as("anon", null, () => db.query("select count(*)::int n from game_reports"));
+ok(anonSees.rows[0].n === 0, "the public sees no reports");
+
+await mustFail("a player cannot approve their own report", () => as("authenticated", who("b"), () => db.query("select approve_game_report($1, '2026-11-01', null, $2::jsonb, 1::smallint)", [report1, JSON.stringify(reportTable())])));
+const selfEdit = await as("authenticated", who("b"), () => db.query("update game_reports set status='approved' where id=$1", [report1]));
+ok(selfEdit.affectedRows === 0, "a player cannot mark their own report approved");
+
+const gameId = (await mustWork("an organizer can approve a report (with their own corrections)", () => as("authenticated", who("admin"),
+  () => db.query("select approve_game_report($1, '2026-11-02', null, $2::jsonb, 2::smallint) as id", [report1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(bPlayer, "eyrie", 2), seat(p1, "alliance", 3), seat(p2, "vagabond", 4)])])))).rows[0].id;
+const approved = await db.query("select status, game_id, reviewed_at is not null as reviewed from game_reports where id=$1", [report1]);
+ok(approved.rows[0].status === "approved" && approved.rows[0].game_id === gameId && approved.rows[0].reviewed, "the report is marked approved and linked to its game");
+const madeGame = await db.query("select round, played_on::text d from games where id=$1", [gameId]);
+ok(madeGame.rows[0].round === 2 && madeGame.rows[0].d === "2026-11-02", "the game uses the organizer's corrected version");
+await mustFail("an approved report cannot be approved twice", () => as("authenticated", who("admin"), () => db.query("select approve_game_report($1, '2026-11-02', null, $2::jsonb, 1::smallint)", [report1, JSON.stringify(reportTable())])));
+const withdrawApproved = await as("authenticated", who("b"), () => db.query("delete from game_reports where id=$1", [report1]));
+ok(withdrawApproved.affectedRows === 0, "an approved report cannot be withdrawn");
+
+const report2 = (await submit("b", ["2026-11-03", 1, JSON.stringify(reportTable()), null])).rows[0].id;
+const withdraw = await as("authenticated", who("b"), () => db.query("delete from game_reports where id=$1", [report2]));
+ok(withdraw.affectedRows === 1, "a player can withdraw a pending report");
+const reject = await as("authenticated", who("admin"), () => db.query("insert into game_reports (submitted_by, reporter_player_id, played_on, results, status, reject_reason) values ($1,$2,'2026-11-03',$3::jsonb,'rejected','Wrong night')", [ids.b, bPlayer, JSON.stringify(reportTable())]));
+ok(reject.affectedRows === 1, "an organizer can record a rejection");
+
+for (let i = 0; i < 5; i++) await submit("d", ["2026-11-0" + (i + 1), 1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)]), null]);
+await mustFail("a sixth waiting report is refused", () => submit("d", ["2026-11-06", 1, JSON.stringify([seat(dPlayer, "marquise", 1), seat(p1, "eyrie", 2), seat(p2, "alliance", 3)]), null]));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

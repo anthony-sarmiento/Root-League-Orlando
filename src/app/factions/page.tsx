@@ -52,7 +52,11 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                 const top = r.topPlayer ? (playerById.get(r.topPlayer.player.id) ?? r.topPlayer.player) : null;
                 return (
                   <tr key={r.faction}>
-                    <td><FactionBadge faction={r.faction} size={36} showName /></td>
+                    <td>
+                      <Link href={`/factions/${r.faction}`} className="inline-flex hover:text-moss-deep">
+                        <FactionBadge faction={r.faction} size={36} showName />
+                      </Link>
+                    </td>
                     <td className="num">{r.games}</td>
                     <td className="num">{r.wins}</td>
                     <td>

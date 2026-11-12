@@ -5,10 +5,22 @@
 
 // ---- LP rules -------------------------------------------------------------
 
-/** Every game seats exactly this many players. */
+/** A full table seats this many players. */
 export const PLAYERS_PER_GAME = 4;
+/** Some tables play with one fewer. */
+export const MIN_PLAYERS_PER_GAME = 3;
+export const TABLE_SIZES = [3, 4] as const;
+/** A night can run up to this many rounds (usually one or two). */
+export const MAX_ROUNDS = 4;
 
 export type Placement = 1 | 2 | 3 | 4;
+
+/** League Points on a table of 3: the same points for 1st to 3rd, with no 4th place. */
+export const LP_THREE_PLAYER: Record<1 | 2 | 3, number> = {
+  1: 5,
+  2: 3,
+  3: 2,
+};
 
 /** League Points awarded by finishing position. */
 export const LP_BY_PLACEMENT: Record<Placement, number> = {
@@ -123,6 +135,8 @@ export interface GameResult {
 
 export interface Game {
   id: string;
+  /** Which round of the night this table played in (1 or 2 usually). */
+  round: number;
   /** ISO date (YYYY-MM-DD) the game was played. */
   playedOn: string;
   sessionId?: string;
@@ -137,6 +151,8 @@ export interface Session {
   location: string;
 }
 
-export function lpForPlacement(placement: Placement): number {
+/** League points for a finishing place, on a table of `tableSize` players. */
+export function lpForPlacement(placement: Placement, tableSize: number = PLAYERS_PER_GAME): number {
+  if (tableSize === 3) return LP_THREE_PLAYER[placement as 1 | 2 | 3] ?? 0;
   return LP_BY_PLACEMENT[placement];
 }

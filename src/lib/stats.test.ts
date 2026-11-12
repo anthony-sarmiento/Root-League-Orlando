@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FactionId, Game, Placement, Player } from "./league";
 import { DEFAULT_SEASONS, featuredSeason, seasonByNumber, seasonForDate, seasonPhase } from "./seasons";
-import { buildFactionStats, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
+import { buildFactionDetail, buildFactionStats, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
 
 const players: Player[] = ["a", "b", "c", "d", "e"].map((id) => ({ id, name: id.toUpperCase() }));
 
@@ -11,6 +11,7 @@ const FACTION_ORDER: FactionId[] = ["marquise", "eyrie", "alliance", "vagabond"]
 function game(id: string, playedOn: string, order: string[], factions = FACTION_ORDER): Game {
   return {
     id,
+    round: 1,
     playedOn,
     results: order.map((playerId, i) => ({
       playerId,
@@ -158,5 +159,72 @@ describe("buildFactionStats", () => {
     expect(marquise.games).toBe(2);
     expect(marquise.winrate).toBe(1);
     expect(marquise.topPlayer?.player.id).toBe("a");
+  });
+});
+
+describe("buildFactionDetail", () => {
+  const games = [
+    game("g1", "2026-11-03", ["a", "b", "c", "d"]), // a marquise 1st, b eyrie 2nd, c alliance 3rd, d vagabond 4th
+    game("g2", "2026-11-05", ["b", "a", "d", "c"]), // b marquise 1st, a eyrie 2nd, d alliance 3rd, c vagabond 4th
+    game("g3", "2026-11-10", ["a", "c", "b", "d"]), // a marquise 1st again
+  ];
+
+  it("totals games, wins, win rate and league points for one faction", () => {
+    const d = buildFactionDetail("marquise", players, games);
+    expect(d.games).toBe(3);
+    expect(d.wins).toBe(3);
+    expect(d.winrate).toBe(1);
+    expect(d.lp).toBe(15);
+    expect(d.placements).toEqual([3, 0, 0, 0]);
+  });
+
+  it("lists who plays it, busiest first, with their own record", () => {
+    const d = buildFactionDetail("marquise", players, games);
+    expect(d.players.map((p) => [p.player.id, p.games, p.wins, p.lp])).toEqual([
+      ["a", 2, 2, 10],
+      ["b", 1, 1, 5],
+    ]);
+  });
+
+  it("is empty for a faction nobody has played", () => {
+    const d = buildFactionDetail("duchy", players, games);
+    expect(d.games).toBe(0);
+    expect(d.winrate).toBe(0);
+    expect(d.players).toEqual([]);
+  });
+
+  it("can be limited to one season's games", () => {
+    const d = buildFactionDetail("eyrie", players, games.slice(0, 1));
+    expect(d.games).toBe(1);
+    expect(d.placements).toEqual([0, 1, 0, 0]);
+  });
+});
+
+describe("tables of three", () => {
+  // Three players: a wins, b second, c third. No fourth place, so the points are 5 / 3 / 2.
+  const three: Game = {
+    id: "g3",
+    round: 2,
+    playedOn: "2026-11-03",
+    results: [
+      { playerId: "a", faction: "marquise", placement: 1 },
+      { playerId: "b", faction: "eyrie", placement: 2 },
+      { playerId: "c", faction: "alliance", placement: 3 },
+    ],
+  };
+
+  it("awards 5 / 3 / 2 LP", () => {
+    const rows = buildLeaderboard(players, [three]);
+    expect(rows.map((r) => [r.player.id, r.lp])).toEqual([
+      ["a", 5],
+      ["b", 3],
+      ["c", 2],
+    ]);
+  });
+
+  it("mixes with tables of four in one leaderboard", () => {
+    const rows = buildLeaderboard(players, [three, game("g4", "2026-11-03", ["c", "a", "b", "d"])]);
+    expect(rows.find((r) => r.player.id === "a")?.lp).toBe(5 + 3);
+    expect(rows.find((r) => r.player.id === "c")?.lp).toBe(2 + 5);
   });
 });

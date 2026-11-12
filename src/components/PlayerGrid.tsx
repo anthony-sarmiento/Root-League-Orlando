@@ -20,14 +20,19 @@ export interface PlayerCardData {
   games: number;
   wins: number;
   winrate: number;
+  /** All-time league points. */
   lp: number;
+  /** League points in the current (or most recent) season. */
+  seasonLp: number;
+  seasonName: string;
   /** Favorite faction if they set one, otherwise their best. */
   faction?: FactionId;
   factionIsFavorite: boolean;
 }
 
 const SORTS = [
-  { id: "lp", label: "Most LP", cmp: (a: PlayerCardData, b: PlayerCardData) => b.lp - a.lp },
+  { id: "lp", label: "Total LP", cmp: (a: PlayerCardData, b: PlayerCardData) => b.lp - a.lp },
+  { id: "season", label: "Season LP", cmp: (a: PlayerCardData, b: PlayerCardData) => b.seasonLp - a.seasonLp || b.lp - a.lp },
   { id: "games", label: "Most games", cmp: (a: PlayerCardData, b: PlayerCardData) => b.games - a.games },
   { id: "wins", label: "Most wins", cmp: (a: PlayerCardData, b: PlayerCardData) => b.wins - a.wins },
   { id: "winrate", label: "Win rate", cmp: (a: PlayerCardData, b: PlayerCardData) => b.winrate - a.winrate || b.games - a.games },
@@ -144,9 +149,6 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
               <li key={p.id}>
                 <Link href={`/players/${p.id}`} className="trade-card" style={style}>
                   <div className="trade-art">
-                    <span className="absolute top-3 left-3 z-10 rounded-full bg-night/85 px-3 py-1 font-display text-lg font-bold text-[#f2c868]">
-                      {p.lp} <span className="text-xs font-semibold text-parchment/80">LP</span>
-                    </span>
                     {p.faction && (
                       <span className="absolute top-3 right-3 z-10">
                         <FactionBadge faction={p.faction} size={40} />
@@ -170,6 +172,16 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
                     <h2 className="truncate font-display text-2xl font-bold">{p.name}</h2>
                   </div>
                   <div className="flex flex-1 flex-col gap-3 px-5 pt-4 pb-5">
+                    <dl className="grid grid-cols-2 gap-2">
+                      <div className="lp-cell">
+                        <dt>Total LP</dt>
+                        <dd className="tabular">{p.lp}</dd>
+                      </div>
+                      <div className="lp-cell">
+                        <dt>{p.seasonName} LP</dt>
+                        <dd className="tabular">{p.seasonLp}</dd>
+                      </div>
+                    </dl>
                     <dl className="grid grid-cols-3 gap-2 border-b-2 border-dashed border-bark/15 pb-3">
                       <div className="stat-cell">
                         <dt>Games</dt>

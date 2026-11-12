@@ -47,57 +47,62 @@ export default async function Home() {
   const recentNights = [...new Set(games.map((g) => g.playedOn))]
     .sort((a, b) => b.localeCompare(a))
     .slice(0, 2)
-    .map((date) => ({ date, games: games.filter((g) => g.playedOn === date) }));
+    .map((date) => {
+      const nightGames = games.filter((g) => g.playedOn === date);
+      return { date, games: nightGames, rounds: [...new Set(nightGames.map((g) => g.round))].sort((a, b) => a - b) };
+    });
 
   return (
     <div className="space-y-24">
       {/* Hero */}
       <Banner pattern="alliance" embers>
-        <div className="grid items-center gap-8 py-12 sm:py-16 md:grid-cols-[1.1fr_0.9fr] lg:py-20">
-          <div className="space-y-6">
-            <h1 className="hero-in text-6xl leading-[1] font-bold sm:text-7xl lg:text-8xl">
-              <span className="text-[#f2c868]">Root</span> League
-            </h1>
-            <p className="hero-in d2 max-w-[52ch] text-lg text-parchment/90 sm:text-xl">
-              Root League is a bi-weekly competitive Root play group that meets Sundays at GEEK&apos;D Orlando. Check
-              out the{" "}
-              <Link
-                href="/sessions"
-                className="font-bold text-[#f2c868] underline decoration-[#f2c868]/50 decoration-2 underline-offset-4 hover:decoration-[#f2c868]"
-              >
-                game night page
-              </Link>{" "}
-              for more information!
-            </p>
-            <div className="hero-in d3 flex flex-wrap gap-3">
-              {viewer ? (
-                <>
-                  <Link href="/sessions" className="btn acorn">Join a game night</Link>
-                  <Link href="/account" className="btn secondary">My profile</Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/signup" className="btn acorn">Join the league</Link>
-                  <Link href="/leaderboard" className="btn secondary">See the standings</Link>
-                </>
-              )}
+        <div className="grid gap-6 pt-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] md:items-stretch lg:pt-14">
+          <div className="flex flex-col justify-between gap-10 pb-10 md:pb-14">
+            <div className="space-y-6">
+              <h1 className="hero-in text-6xl sm:text-7xl lg:text-8xl">
+                <span className="text-[#f2c868]">Root</span> League
+              </h1>
+              <p className="hero-in d2 max-w-[46ch] text-lg text-parchment/90 sm:text-xl">
+                Root League is a bi-weekly competitive Root play group that meets Sundays at GEEK&apos;D Orlando. Check
+                out the{" "}
+                <Link
+                  href="/sessions"
+                  className="font-bold text-[#f2c868] underline decoration-[#f2c868]/50 decoration-2 underline-offset-4 hover:decoration-[#f2c868]"
+                >
+                  game night page
+                </Link>{" "}
+                for more information!
+              </p>
+              <div className="hero-in d3 flex flex-wrap gap-3">
+                {viewer ? (
+                  <>
+                    <Link href="/sessions" className="btn acorn">Join a game night</Link>
+                    <Link href="/account" className="btn secondary">My profile</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/signup" className="btn acorn">Join the league</Link>
+                    <Link href="/leaderboard" className="btn secondary">See the standings</Link>
+                  </>
+                )}
+              </div>
             </div>
-            <dl className="hero-in d3 grid max-w-md grid-cols-3 divide-x divide-parchment/20 rounded-2xl border border-parchment/20 bg-black/25 py-4 text-center shadow-[0_14px_24px_-14px_rgba(0,0,0,0.6)]">
+            <dl className="hero-in d3 grid grid-cols-3 divide-x divide-parchment/20 rounded-3xl border border-parchment/20 bg-black/25 py-7 text-center shadow-[0_18px_30px_-16px_rgba(0,0,0,0.65)] sm:py-9">
               {[
                 { label: "Games played", value: totals.games },
                 { label: "Players", value: totals.players },
                 { label: "Game nights", value: sessions.length },
               ].map((stat) => (
-                <div key={stat.label} className="flex flex-col-reverse items-center gap-1 px-2">
-                  <dt className="text-xs font-semibold tracking-wide text-parchment/75 uppercase sm:text-sm sm:tracking-normal sm:normal-case">{stat.label}</dt>
-                  <dd className="font-display text-4xl leading-none font-bold tabular text-[#f2c868]">{stat.value}</dd>
+                <div key={stat.label} className="flex flex-col-reverse items-center gap-2 px-2">
+                  <dt className="text-xs font-semibold tracking-[0.08em] text-parchment/75 uppercase sm:text-sm">{stat.label}</dt>
+                  <dd className="font-display text-6xl leading-none font-bold tabular text-[#f2c868] sm:text-7xl">{stat.value}</dd>
                 </div>
               ))}
             </dl>
           </div>
-          <div className="hero-art relative mx-auto w-full max-w-[340px] md:max-w-none">
+          <div className="hero-art relative mx-auto flex w-full max-w-[420px] items-end justify-center md:max-w-none">
             <div
-              className="absolute inset-[8%] -z-10 rounded-full bg-[radial-gradient(circle,rgba(242,200,104,0.5),transparent_68%)]"
+              className="absolute inset-[2%] -z-10 rounded-full bg-[radial-gradient(circle,rgba(242,200,104,0.5),transparent_68%)]"
               aria-hidden="true"
             />
             <Image
@@ -106,7 +111,7 @@ export default async function Home() {
               width={520}
               height={520}
               priority
-              className="mx-auto h-auto w-full max-w-[460px] drop-shadow-[0_22px_28px_rgba(0,0,0,0.5)]"
+              className="h-auto w-full max-w-[640px] drop-shadow-[0_22px_28px_rgba(0,0,0,0.5)]"
             />
           </div>
         </div>
@@ -188,7 +193,7 @@ export default async function Home() {
           <Perch id="sergeant-atheldrydd" w={96} right="2.5rem" />
           <SectionHeading
             title="How points work"
-            description={`Each game has ${PLAYERS_PER_GAME} players, and where you finish sets your league points. Play as many games as the night allows; every one counts toward your season.`}
+            description={`A table seats ${PLAYERS_PER_GAME} players, sometimes 3, and where you finish sets your league points. A night can run a round or two and several tables at once; every table you play counts toward your season.`}
           />
           <div className="mt-6">
             <LpScale />
@@ -200,7 +205,7 @@ export default async function Home() {
       <section className="glow" style={{ "--glow": "radial-gradient(60% 55% at 50% 72%, rgba(240, 140, 50, 0.38), transparent 70%)" } as CSSProperties}>
         <Embers count={22} />
         <div className="mx-auto max-w-3xl space-y-6 text-center">
-          <h2 className="text-5xl leading-[1.03] font-bold sm:text-7xl">
+          <h2 className="text-5xl font-bold sm:text-7xl">
             Every faction plays <span className="text-[#f2c868]">differently!</span>
           </h2>
           <div className="flex flex-wrap justify-center gap-3">
@@ -220,8 +225,8 @@ export default async function Home() {
           title={`The ${FACTIONS.length} factions`}
           description="Current League Faction Winrates"
           action={
-            <Link href="/factions" className="chip !border-parchment/30 !bg-parchment/10 !text-parchment hover:!bg-parchment/20">
-              Faction stats <ArrowRight size={16} aria-hidden="true" />
+            <Link href="/factions" className="btn acorn big">
+              View all factions <ArrowRight size={22} aria-hidden="true" />
             </Link>
           }
         />
@@ -231,7 +236,7 @@ export default async function Home() {
             const style = { "--pattern": `url(${f.pattern})`, "--tint": f.color } as CSSProperties;
             return (
               <li key={f.id}>
-                <Link href="/factions" className="faction-tile h-full" style={style}>
+                <Link href={`/factions/${f.id}`} className="faction-tile h-full" style={style}>
                   <span className="tile-bg" aria-hidden="true" />
                   <span className="tile-critter" style={{ "--r": `${[-7, 6, -4, 8, -6][i % 5]}deg` } as CSSProperties} aria-hidden="true">
                     <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={320} height={320} className="h-32 w-auto" />
@@ -263,40 +268,49 @@ export default async function Home() {
               <h3 className="flex flex-wrap items-baseline gap-x-3 text-2xl font-bold">
                 {formatDate(night.date, { weekday: "long" })}
                 <span className="text-base font-semibold text-parchment/70">
-                  {night.games.length} {night.games.length === 1 ? "game" : "games"}
+                  {night.games.length} {night.games.length === 1 ? "table" : "tables"}
+                  {night.rounds.length > 1 && ` · ${night.rounds.length} rounds`}
                 </span>
               </h3>
-              <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {night.games.map((g, i) => (
-                  <li key={g.id} className="card p-5">
-                    <p className="mb-3 text-sm font-bold tracking-wide text-bark-soft uppercase">
-                      {night.games.length > 1 ? `Table ${i + 1}` : "Table"}
-                    </p>
-                    <ol className="space-y-2">
-                      {[...g.results]
-                        .sort((a, b) => a.placement - b.placement)
-                        .map((r) => (
-                          <li
-                            key={r.playerId}
-                            className={`flex items-center gap-3 rounded-xl px-2 py-1 ${r.placement === 1 ? "-mx-2 bg-honey/25 font-bold" : ""}`}
-                          >
-                            <span className="w-9 text-sm font-bold text-bark-soft">
-                              {r.placement === 1 ? (
-                                <Crown size={20} className="text-acorn-deep" aria-label="1st" />
-                              ) : (
-                                ordinal(r.placement)
-                              )}
-                            </span>
-                            <FactionBadge faction={r.faction} size={30} />
-                            <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
-                              {playerById.get(r.playerId)?.name ?? "Unknown"}
-                            </Link>
-                          </li>
-                        ))}
-                    </ol>
-                  </li>
-                ))}
-              </ul>
+              {night.rounds.map((round) => (
+                <div key={round} className="space-y-3">
+                  {night.rounds.length > 1 && <h4 className="text-xl font-bold text-parchment/90">Round {round}</h4>}
+                  <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {night.games
+                      .filter((g) => g.round === round)
+                      .map((g, i) => (
+                        <li key={g.id} className="card p-5">
+                          <p className="mb-3 text-sm font-bold tracking-wide text-bark-soft uppercase">
+                            Table {i + 1}
+                            {g.results.length === 3 && <span className="ml-2 font-semibold normal-case">3 players</span>}
+                          </p>
+                          <ol className="space-y-2">
+                            {[...g.results]
+                              .sort((a, b) => a.placement - b.placement)
+                              .map((r) => (
+                                <li
+                                  key={r.playerId}
+                                  className={`flex items-center gap-3 rounded-xl px-2 py-1 ${r.placement === 1 ? "-mx-2 bg-honey/25 font-bold" : ""}`}
+                                >
+                                  <span className="w-9 text-sm font-bold text-bark-soft">
+                                    {r.placement === 1 ? (
+                                      <Crown size={20} className="text-acorn-deep" aria-label="1st" />
+                                    ) : (
+                                      ordinal(r.placement)
+                                    )}
+                                  </span>
+                                  <FactionBadge faction={r.faction} size={30} />
+                                  <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
+                                    {playerById.get(r.playerId)?.name ?? "Unknown"}
+                                  </Link>
+                                </li>
+                              ))}
+                          </ol>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           ))}
         </section>

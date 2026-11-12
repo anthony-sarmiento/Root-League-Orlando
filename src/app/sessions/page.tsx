@@ -33,6 +33,8 @@ export default async function SessionsPage() {
   const [next, ...later] = upcoming;
   const past = sessions.filter((s) => s.date < today).sort((a, b) => b.date.localeCompare(a.date));
 
+  /** The distinct rounds played in a set of tables, in order. */
+  const roundsOf = (gs: Game[]) => [...new Set(gs.map((g) => g.round))].sort((a, b) => a - b);
   const winnerOf = (g: Game) => g.results.find((r) => r.placement === 1);
 
   return (
@@ -43,6 +45,14 @@ export default async function SessionsPage() {
         crew={[{ id: "skipper-audgunn", w: 150 }, { id: "captain-hersilia", w: 160 }, { id: "thief", w: 140, f: -1 }]}
         description="Root League meets every other Sunday at GEEK'D Orlando. Several tables play at once, each seating four, and you can play as many games as the night allows. RSVP ahead so organizers can plan the tables."
       />
+
+      <section className="card flex flex-wrap items-center justify-between gap-4 p-5 sm:px-7">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold">Played a table that isn&apos;t on the board?</h2>
+          <p className="text-bark-soft">Report it yourself. An organizer approves it before it counts.</p>
+        </div>
+        <Link href="/report" className="btn acorn">Report a game</Link>
+      </section>
 
       <section className="space-y-5">
         <SectionHeading onDark title="Next game night" />
@@ -83,7 +93,8 @@ export default async function SessionsPage() {
                     <span className="min-w-0">
                       <span className="block font-display text-xl font-bold">{formatDate(s.date, { weekday: "long" })}</span>
                       <span className="text-sm text-bark-soft">
-                        {sessionGames.length} {sessionGames.length === 1 ? "game" : "games"}
+                        {sessionGames.length} {sessionGames.length === 1 ? "table" : "tables"}
+                        {roundsOf(sessionGames).length > 1 && ` · ${roundsOf(sessionGames).length} rounds`}
                       </span>
                     </span>
                     <span className="flex items-center gap-3">
@@ -103,30 +114,42 @@ export default async function SessionsPage() {
                       <ChevronDown size={20} className="transition-transform group-open:rotate-180" aria-hidden="true" />
                     </span>
                   </summary>
-                  <div className="grid gap-3 border-t-2 border-dashed border-bark/15 p-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
+                  <div className="space-y-5 border-t-2 border-dashed border-bark/15 p-4 sm:px-6">
                     {sessionGames.length === 0 && <p className="text-bark-soft">No results were logged for this night.</p>}
-                    {sessionGames.map((g, i) => (
-                      <div key={g.id} className="rounded-xl bg-parchment/70 p-3">
-                        <p className="mb-2 text-xs font-bold tracking-wide text-bark-soft uppercase">Table {i + 1}</p>
-                        <ol className="space-y-1.5">
-                          {[...g.results]
-                            .sort((a, b) => a.placement - b.placement)
-                            .map((r) => (
-                              <li key={r.playerId} className="flex items-center gap-2.5">
-                                <span className="w-9 text-sm font-bold text-bark-soft">
-                                  {r.placement === 1 ? (
-                                    <Crown size={18} className="text-honey" aria-label="1st" />
-                                  ) : (
-                                    ordinal(r.placement)
-                                  )}
-                                </span>
-                                <FactionBadge faction={r.faction} size={28} />
-                                <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
-                                  {playerById.get(r.playerId)?.name ?? "Unknown"}
-                                </Link>
-                              </li>
+                    {roundsOf(sessionGames).map((round) => (
+                      <div key={round} className="space-y-3">
+                        {roundsOf(sessionGames).length > 1 && <h4 className="text-xl font-bold">Round {round}</h4>}
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {sessionGames
+                            .filter((g) => g.round === round)
+                            .map((g, i) => (
+                              <div key={g.id} className="rounded-xl bg-parchment/70 p-3">
+                                <p className="mb-2 text-xs font-bold tracking-wide text-bark-soft uppercase">
+                                  Table {i + 1}
+                                  {g.results.length === 3 && <span className="ml-2 font-semibold normal-case">3 players</span>}
+                                </p>
+                                <ol className="space-y-1.5">
+                                  {[...g.results]
+                                    .sort((a, b) => a.placement - b.placement)
+                                    .map((r) => (
+                                      <li key={r.playerId} className="flex items-center gap-2.5">
+                                        <span className="w-9 text-sm font-bold text-bark-soft">
+                                          {r.placement === 1 ? (
+                                            <Crown size={18} className="text-honey" aria-label="1st" />
+                                          ) : (
+                                            ordinal(r.placement)
+                                          )}
+                                        </span>
+                                        <FactionBadge faction={r.faction} size={28} />
+                                        <Link href={`/players/${r.playerId}`} className="font-semibold hover:text-moss-deep">
+                                          {playerById.get(r.playerId)?.name ?? "Unknown"}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                </ol>
+                              </div>
                             ))}
-                        </ol>
+                        </div>
                       </div>
                     ))}
                   </div>

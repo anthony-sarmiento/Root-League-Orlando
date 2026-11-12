@@ -2,13 +2,19 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/PageHeader";
 import { PlayerGrid, type PlayerCardData } from "@/components/PlayerGrid";
 import { getLeagueData } from "@/lib/data";
-import { buildPlayerProfile } from "@/lib/stats";
+import { featuredSeason, todayISO } from "@/lib/seasons";
+import { buildLeaderboard, buildPlayerProfile, gamesInSeason } from "@/lib/stats";
 
 export const metadata: Metadata = { title: "Players" };
 export const dynamic = "force-dynamic";
 
 export default async function PlayersPage() {
   const { players, games, seasons } = await getLeagueData();
+  const season = featuredSeason(seasons, todayISO());
+  const seasonLp = new Map(
+    (season ? buildLeaderboard(players, gamesInSeason(games, season)) : []).map((r) => [r.player.id, r.lp]),
+  );
+  const seasonName = season ? season.label.split(" · ")[0] : "This season";
   const cards: PlayerCardData[] = players.map((p) => {
     const profile = buildPlayerProfile(p, players, games, seasons);
     return {
@@ -22,6 +28,8 @@ export default async function PlayersPage() {
       wins: profile.wins,
       winrate: profile.winrate,
       lp: profile.lp,
+      seasonLp: seasonLp.get(p.id) ?? 0,
+      seasonName,
       faction: p.favoriteFaction ?? profile.bestFaction?.faction,
       factionIsFavorite: Boolean(p.favoriteFaction),
     };

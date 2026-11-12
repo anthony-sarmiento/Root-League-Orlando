@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminForAction } from "@/lib/admin";
 import { cleanPlayerName } from "@/lib/player-name";
+import { parseGameForm, toRpcResults } from "@/lib/game-form-data";
 import { validateGameInput, type GameInput } from "@/lib/game-input";
-import { PLACEMENTS, type FactionId } from "@/lib/league";
 import { validateSeasonInput } from "@/lib/season-input";
 
 export interface FormState {
   ok?: string;
   errors?: string[];
+  /** Changes with every successful save, so a form can tell this save from the last one. */
+  nonce?: number;
 }
 
 const NOT_ADMIN: FormState = { errors: ["Only league organizers can do that."] };
@@ -17,52 +19,85 @@ const refresh = () => revalidatePath("/", "layout");
 
 const text = (formData: FormData, key: string) => String(formData.get(key) ?? "").trim();
 
-export async function logGame(_prev: FormState, formData: FormData): Promise<FormState> {
-  const admin = await requireAdminForAction();
-  if (!admin) return NOT_ADMIN;
-  const { supabase } = admin;
-
-  const sessionId = text(formData, "sessionId") || null;
-  let playedOn = text(formData, "playedOn");
-
-  // Seat order is finishing order: seat 1 = 1st place, and so on.
-  const input: GameInput = {
-    playedOn,
-    sessionId,
-    results: PLACEMENTS.map((placement, i) => ({
-      playerId: text(formData, `player-${i}`),
-      faction: text(formData, `faction-${i}`) as FactionId,
-      placement,
-    })),
-  };
-
+/** Checks a table against the league (players exist, night exists) and returns its results ready for the database. */
+async function checkGame(
+  supabase: NonNullable<Awaited<ReturnType<typeof requireAdminForAction>>>["supabase"],
+  input: GameInput,
+): Promise<{ errors: string[] } | { errors: []; rpcResults: object[] }> {
   const { data: players, error: playersError } = await supabase.from("players").select("id");
   if (playersError) return { errors: ["Couldn't check the player list. Try again."] };
 
   // A game attached to a game night is always dated that night.
-  if (sessionId) {
-    const { data: session } = await supabase.from("sessions").select("date").eq("id", sessionId).single();
+  if (input.sessionId) {
+    const { data: session } = await supabase.from("sessions").select("date").eq("id", input.sessionId).single();
     if (!session) return { errors: ["That game night no longer exists."] };
-    playedOn = session.date;
-    input.playedOn = playedOn;
+    input.playedOn = session.date;
   }
 
   const errors = validateGameInput(input, new Set((players ?? []).map((p) => p.id)));
   if (errors.length) return { errors };
 
+  return { errors: [], rpcResults: toRpcResults(input) };
+}
+
+export async function logGame(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+  const { supabase } = admin;
+
+  const input = parseGameForm(formData);
+  const checked = await checkGame(supabase, input);
+  if (checked.errors.length || !("rpcResults" in checked)) return { errors: checked.errors };
+
   const { error } = await supabase.rpc("log_game", {
     p_played_on: input.playedOn,
     p_session_id: input.sessionId,
-    p_results: input.results.map((r) => ({
-      player_id: r.playerId,
-      faction: r.faction,
-      placement: r.placement,
-    })),
+    p_results: checked.rpcResults,
+    p_round: input.round ?? 1,
   });
-  if (error) return { errors: ["Couldn't save the game. Nothing was recorded — please try again."] };
+  if (error) {
+    console.error("[log-game] failed:", error.code, error.message);
+    // PGRST202: the database doesn't have the rounds migration yet, so the old function can't take a round.
+    if (error.code === "PGRST202") {
+      return { errors: ["The database needs its latest update (migration 0007) before tables and rounds can be saved."] };
+    }
+    return { errors: ["Couldn't save the game. Nothing was recorded — please try again."] };
+  }
 
   refresh();
-  return { ok: "Game logged! Standings are updated." };
+  return { ok: "Table saved! Standings are updated.", nonce: Date.now() };
+}
+
+/** Changes an existing table: its players, factions, finishing order, night or round. */
+export async function updateGame(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+  const { supabase } = admin;
+
+  const gameId = text(formData, "gameId");
+  if (!gameId) return { errors: ["Pick a table to edit."] };
+
+  const input = parseGameForm(formData);
+  const checked = await checkGame(supabase, input);
+  if (checked.errors.length || !("rpcResults" in checked)) return { errors: checked.errors };
+
+  const { error } = await supabase.rpc("update_game", {
+    p_game_id: gameId,
+    p_played_on: input.playedOn,
+    p_session_id: input.sessionId,
+    p_results: checked.rpcResults,
+    p_round: input.round ?? 1,
+  });
+  if (error) {
+    console.error("[update-game] failed:", error.code, error.message);
+    if (error.code === "PGRST202") {
+      return { errors: ["The database needs its latest update (migration 0007) before tables can be edited."] };
+    }
+    return { errors: [error.message === "Game not found" ? "That table no longer exists." : "Couldn't save your changes. Nothing was changed."] };
+  }
+
+  refresh();
+  return { ok: "Table updated.", nonce: Date.now() };
 }
 
 export async function addPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -151,6 +186,107 @@ export async function addSession(_prev: FormState, formData: FormData): Promise<
   if (error) return { errors: ["Couldn't add that game night."] };
   refresh();
   return { ok: "Game night added." };
+}
+
+/**
+ * Approves a player's report, using the organizer's final version of the table (so a mistake can be fixed on the
+ * way through). The table only counts toward the standings from this moment.
+ */
+export async function approveReport(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+  const { supabase } = admin;
+
+  const reportId = text(formData, "reportId");
+  if (!reportId) return { errors: ["Pick a report to approve."] };
+
+  const input = parseGameForm(formData);
+  const checked = await checkGame(supabase, input);
+  if (checked.errors.length || !("rpcResults" in checked)) return { errors: checked.errors };
+
+  const { error } = await supabase.rpc("approve_game_report", {
+    p_report_id: reportId,
+    p_played_on: input.playedOn,
+    p_session_id: input.sessionId,
+    p_results: checked.rpcResults,
+    p_round: input.round ?? 1,
+  });
+  if (error) {
+    console.error("[approve-report] failed:", error.code, error.message);
+    return {
+      errors: [
+        error.message.includes("already reviewed")
+          ? "That report was already reviewed."
+          : "Couldn't approve that report. Nothing was recorded.",
+      ],
+    };
+  }
+
+  refresh();
+  return { ok: "Approved. The table is on the books.", nonce: Date.now() };
+}
+
+/** Turns a report down, with an optional reason the player can read. */
+export async function rejectReport(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const reportId = text(formData, "reportId");
+  const reason = text(formData, "reason");
+  if (!reportId) return { errors: ["Pick a report to reject."] };
+  if (reason.length > 280) return { errors: ["Keep the reason under 280 characters."] };
+
+  const { data, error } = await admin.supabase
+    .from("game_reports")
+    .update({ status: "rejected", reject_reason: reason || null, reviewed_by: admin.user.id, reviewed_at: new Date().toISOString() })
+    .eq("id", reportId)
+    .eq("status", "pending")
+    .select("id");
+  if (error || !data || data.length === 0) return { errors: ["That report was already reviewed."] };
+
+  refresh();
+  return { ok: "Report rejected.", nonce: Date.now() };
+}
+
+/** Changes a game night's date, title or place. Its tables move with it only if the date is unchanged. */
+export async function updateSession(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+
+  const id = text(formData, "sessionId");
+  const date = text(formData, "date");
+  const title = text(formData, "title") || "Root League Night";
+  const location = text(formData, "location") || "GEEK'D Orlando";
+  if (!id) return { errors: ["Pick a game night to edit."] };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) return { errors: ["Pick a valid date."] };
+  if (title.length > 80 || location.length > 80) return { errors: ["Keep the title and place under 80 characters."] };
+
+  const { data, error } = await admin.supabase
+    .from("sessions")
+    .update({ date, title, location })
+    .eq("id", id)
+    .select("id");
+  if (error || !data || data.length === 0) return { errors: ["Couldn't save that game night."] };
+
+  // Tables on this night are dated by it, so they follow the new date.
+  await admin.supabase.from("games").update({ played_on: date }).eq("session_id", id);
+
+  refresh();
+  return { ok: "Game night saved." };
+}
+
+/** Removes a game night. Its tables stay on the books (and in the standings) but are no longer tied to a night. */
+export async function deleteSession(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdminForAction();
+  if (!admin) return NOT_ADMIN;
+  const id = text(formData, "sessionId");
+  if (!id) return { errors: ["Pick a game night to remove."] };
+
+  const { data, error } = await admin.supabase.from("sessions").delete().eq("id", id).select("id");
+  if (error) return { errors: ["Couldn't remove that game night."] };
+  if (!data || data.length === 0) return { errors: ["That game night was already removed."] };
+  refresh();
+  return { ok: "Game night removed." };
 }
 
 export async function deleteGame(formData: FormData): Promise<void> {

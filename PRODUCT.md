@@ -21,12 +21,13 @@ Root League Orlando organizes live, in-person play sessions of the board game Ro
 A local, in-person Root league with two-month seasons, a prize pool for the season's top LP earner, and a profile for every player that records their history and best faction. The site's job beyond a spreadsheet or Discord thread is to give players an identity and make newcomers feel welcome.
 
 ## Operating Context
-- Every game seats exactly 4 players. LP by finish: 1st = 5, 2nd = 3, 3rd = 2, 4th = 1.
+- A table seats 4 players, or 3 when a table is short. LP by finish at a table of four: 1st = 5, 2nd = 3, 3rd = 2, 4th = 1. At a table of three: 5 / 3 / 2 (a builder default, not yet confirmed by the league). A game night runs one or two rounds (up to four are allowed), each with several tables.
 - Seasons are explicit date ranges kept in the database `seasons` table and managed by organizers: Season 1 ran Jun 7 – Sep 7, 2026; Season 2 runs Nov 1 – Dec 20, 2026, with game nights every other week. At season end the player with the most LP wins the prize pool. LP is computed from placements, never stored, so rule changes apply retroactively. LP rules live in `src/lib/league.ts`.
 - Season ties: most wins, then best average placement (a choice made by the builder, not yet confirmed by the league).
 - Only players with at least one game in a season appear on that season's leaderboard; there is no minimum-games requirement.
 - Games are played live at game nights ("sessions") in Orlando. Results are entered by organizers (admins). Season 1 results are being entered by hand.
 - Public read. Organizers (listed in an `admins` table) write everything; signed-in players can only edit their own profile and RSVP themselves to upcoming nights (Supabase row-level security).
+- Players can report their own tables; an organizer must approve each report (fixing it first if needed) before it counts toward LP.
 - Anyone can create an account (open sign-up, email confirmation off). Players create a profile or claim an existing name, which an organizer approves.
 
 ## Capabilities and Constraints

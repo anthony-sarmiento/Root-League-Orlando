@@ -1,9 +1,11 @@
-import { FACTIONS, PLACEMENTS, PLAYERS_PER_GAME, type FactionId, type Placement } from "./league";
+import { FACTIONS, MAX_ROUNDS, MIN_PLAYERS_PER_GAME, PLACEMENTS, PLAYERS_PER_GAME, type FactionId, type Placement } from "./league";
 
 /** What an organizer submits when logging a game. Row order = finishing order. */
 export interface GameInput {
   playedOn: string; // YYYY-MM-DD
   sessionId: string | null;
+  /** Round of the night, 1 or 2 usually. Defaults to 1. */
+  round?: number;
   results: { playerId: string; faction: FactionId; placement: Placement }[];
 }
 
@@ -26,8 +28,14 @@ export function validateGameInput(input: GameInput, knownPlayerIds?: Set<string>
 
   if (!isRealDate(input.playedOn)) errors.push("Pick a valid date.");
 
-  if (input.results.length !== PLAYERS_PER_GAME) {
-    errors.push(`A game needs exactly ${PLAYERS_PER_GAME} players.`);
+  const round = input.round ?? 1;
+  if (!Number.isInteger(round) || round < 1 || round > MAX_ROUNDS) {
+    errors.push(`Pick a round from 1 to ${MAX_ROUNDS}.`);
+  }
+
+  const seats = input.results.length;
+  if (seats < MIN_PLAYERS_PER_GAME || seats > PLAYERS_PER_GAME) {
+    errors.push(`A table seats ${MIN_PLAYERS_PER_GAME} or ${PLAYERS_PER_GAME} players.`);
     return errors;
   }
 
@@ -42,8 +50,11 @@ export function validateGameInput(input: GameInput, knownPlayerIds?: Set<string>
   if (factions.some((f) => !FACTION_IDS.has(f))) errors.push("Choose a faction for every seat.");
   else if (new Set(factions).size !== factions.length) errors.push("Each faction can only be played once per game.");
 
+  // Places must run 1st to the last seat, once each.
   const placements = input.results.map((r) => r.placement).sort();
-  if (PLACEMENTS.some((p, i) => placements[i] !== p)) errors.push("Finishing places must be 1st through 4th, once each.");
+  if (PLACEMENTS.slice(0, seats).some((p, i) => placements[i] !== p)) {
+    errors.push(`Finishing places must be 1st through ${seats === 3 ? "3rd" : "4th"}, once each.`);
+  }
 
   return errors;
 }

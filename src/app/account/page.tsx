@@ -54,6 +54,11 @@ export default async function AccountPage() {
               View my public profile
             </Link>
           )}
+          {me && (
+            <Link href="/report" className="btn secondary small">
+              Report a game
+            </Link>
+          )}
           {viewer.isAdmin && (
             <Link href="/admin" className="btn acorn small">
               <ShieldCheck size={18} aria-hidden="true" /> Organizer tools

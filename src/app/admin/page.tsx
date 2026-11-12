@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { AddPlayerForm, AddSessionForm, DeleteGameForm } from "@/components/admin/SimpleForms";
+import { AddPlayerForm, AddSessionForm } from "@/components/admin/SimpleForms";
 import { ClaimActions, SeasonForm } from "@/components/admin/SeasonAndClaimForms";
 import { PageHeader } from "@/components/PageHeader";
 import { LogGameForm } from "@/components/admin/LogGameForm";
+import { NightManager } from "@/components/admin/NightManager";
+import { ReportQueue } from "@/components/admin/ReportQueue";
 import { PlayerManager } from "@/components/admin/PlayerManager";
 import { signOut } from "@/app/login/actions";
 import { getAdminContext } from "@/lib/admin";
 import { getLeagueData } from "@/lib/data";
-import { formatDate, ordinal } from "@/lib/format";
-import { getFaction } from "@/lib/league";
+import { looksLikeDuplicate } from "@/lib/game-report";
+import { fetchPendingReports } from "@/lib/reports";
 import { todayISO } from "@/lib/seasons";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -59,14 +61,12 @@ export default async function AdminPage() {
     const name = Array.isArray(joined) ? joined[0]?.name : joined?.name;
     return { userId: c.user_id as string, email: c.claimant_email as string, note: c.note as string | null, playerName: name ?? "Unknown" };
   });
+  const { reports: pendingReports } = await fetchPendingReports(supabase);
+  const queued = pendingReports.map((report) => ({ report, duplicate: looksLikeDuplicate(report, games) }));
   const gamesByPlayer = new Map<string, number>();
   for (const g of games) for (const r of g.results) gamesByPlayer.set(r.playerId, (gamesByPlayer.get(r.playerId) ?? 0) + 1);
   const managedPlayers = players.map((p) => ({ id: p.id, name: p.name, games: gamesByPlayer.get(p.id) ?? 0 }));
   const nextSeasonNumber = Math.max(0, ...seasons.map((x) => x.number)) + 1;
-  const playerName = new Map(players.map((p) => [p.id, p.name]));
-  const recent = [...games]
-    .sort((a, b) => b.playedOn.localeCompare(a.playedOn) || b.id.localeCompare(a.id))
-    .slice(0, 10);
   const sessionsNewestFirst = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -76,6 +76,19 @@ export default async function AdminPage() {
           <button className="btn secondary small">Sign out</button>
         </form>
       </PageHeader>
+
+      {queued.length > 0 && (
+        <section className="card p-5">
+          <h2 className="mb-1 text-2xl font-bold">
+            Reports waiting for approval <span className="text-acorn-deep">({queued.length})</span>
+          </h2>
+          <p className="mb-4 text-bark-soft">
+            Players reported these tables themselves. Nothing counts toward the standings until you approve it. Review
+            to fix any mistake, then approve.
+          </p>
+          <ReportQueue items={queued} players={players} sessions={sessionsNewestFirst} today={today} />
+        </section>
+      )}
 
       {claims.length > 0 && (
         <section className="card stitched p-5">
@@ -99,10 +112,14 @@ export default async function AdminPage() {
         </section>
       )}
 
-      <section className="card stitched p-5">
-        <h2 className="mb-3 text-2xl font-bold">Log a game</h2>
-        {players.length < 4 ? (
-          <p className="text-bark-soft">Add at least four players below before logging a game.</p>
+      <section className="card p-5">
+        <h2 className="mb-1 text-2xl font-bold">Log a table</h2>
+        <p className="mb-3 text-bark-soft">
+          A table seats 3 or 4 players. Pick the night and round, then add each table as it finishes: a night can have
+          several tables in each round. Fix or delete any table further down.
+        </p>
+        {players.length < 3 ? (
+          <p className="text-bark-soft">Add at least three players below before logging a table.</p>
         ) : (
           <LogGameForm players={players} sessions={sessionsNewestFirst} today={today} />
         )}
@@ -143,39 +160,14 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <section className="card p-5">
-        <h2 className="mb-3 text-2xl font-bold">Recent games</h2>
-        {recent.length === 0 ? (
-          <p className="text-bark-soft">No games logged yet.</p>
-        ) : (
-          <ul className="divide-y-2 divide-dashed divide-bark/15">
-            {recent.map((g) => {
-              const ordered = [...g.results].sort((a, b) => a.placement - b.placement);
-              const summary = `${formatDate(g.playedOn)}: ${ordered
-                .map((r) => `${ordinal(r.placement)} ${playerName.get(r.playerId) ?? "?"}`)
-                .join(", ")}`;
-              return (
-                <li key={g.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div>
-                    <p className="text-xs font-bold tracking-wider text-bark-soft uppercase">
-                      {formatDate(g.playedOn)}
-                    </p>
-                    <p>
-                      {ordered.map((r, i) => (
-                        <span key={r.playerId}>
-                          {i > 0 && " · "}
-                          <strong>{ordinal(r.placement)}</strong> {playerName.get(r.playerId) ?? "?"}{" "}
-                          <span className="text-bark-soft">({getFaction(r.faction).name})</span>
-                        </span>
-                      ))}
-                    </p>
-                  </div>
-                  <DeleteGameForm gameId={g.id} summary={summary} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-3xl font-bold">Game nights and tables</h2>
+          <p className="mt-1 text-parchment/80">
+            Open a night to change its details, add rounds, add tables, and edit or delete any table.
+          </p>
+        </div>
+        <NightManager players={players} sessions={sessionsNewestFirst} games={games} today={today} />
       </section>
     </div>
   );

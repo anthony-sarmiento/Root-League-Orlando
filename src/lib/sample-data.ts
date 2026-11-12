@@ -74,6 +74,7 @@ for (const session of sessions.filter((s) => PAST_DATES.includes(s.date))) {
       .sort((a, b) => b.score - a.score);
     games.push({
       id: `g-${session.id}-${table + 1}`,
+      round: 1,
       playedOn: session.date,
       sessionId: session.id,
       results: order.map((o, i) => ({
@@ -83,6 +84,23 @@ for (const session of sessions.filter((s) => PAST_DATES.includes(s.date))) {
       })),
     });
   }
+}
+
+// Some nights run a second round; its table sometimes seats only three.
+for (const [i, session] of sessions.filter((s) => PAST_DATES.includes(s.date)).entries()) {
+  if (i % 3 !== 1) continue;
+  const group = shuffle(players).slice(0, 3);
+  const factions = shuffle(FACTIONS).slice(0, 3);
+  const order = group
+    .map((p, k) => ({ p, faction: factions[k].id, score: (strengthOf.get(p.id) ?? 0) + rng() * 1.8 }))
+    .sort((a, b) => b.score - a.score);
+  games.push({
+    id: `g-${session.id}-r2`,
+    round: 2,
+    playedOn: session.date,
+    sessionId: session.id,
+    results: order.map((o, k) => ({ playerId: o.p.id, faction: o.faction, placement: (k + 1) as Placement })),
+  });
 }
 
 export const sampleData = { players, sessions, games, seasons: DEFAULT_SEASONS };

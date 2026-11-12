@@ -24,10 +24,10 @@ interface Tally {
 
 const emptyTally = (): Tally => ({ games: 0, wins: 0, lp: 0, placementSum: 0 });
 
-function addResult(t: Tally, placement: Placement) {
+function addResult(t: Tally, placement: Placement, tableSize: number) {
   t.games += 1;
   t.wins += placement === 1 ? 1 : 0;
-  t.lp += lpForPlacement(placement);
+  t.lp += lpForPlacement(placement, tableSize);
   t.placementSum += placement;
 }
 
@@ -55,7 +55,7 @@ export function buildLeaderboard(players: Player[], games: Game[]): LeaderboardR
   for (const game of games) {
     for (const r of game.results) {
       const t = tallies.get(r.playerId) ?? emptyTally();
-      addResult(t, r.placement);
+      addResult(t, r.placement, game.results.length);
       tallies.set(r.playerId, t);
     }
   }
@@ -153,9 +153,9 @@ export function buildPlayerProfile(
 
   for (const game of mine) {
     const result = game.results.find((r) => r.playerId === player.id)!;
-    addResult(total, result.placement);
+    addResult(total, result.placement, game.results.length);
     const ft = factionTallies.get(result.faction) ?? emptyTally();
-    addResult(ft, result.placement);
+    addResult(ft, result.placement, game.results.length);
     factionTallies.set(result.faction, ft);
 
     history.push({
@@ -163,7 +163,7 @@ export function buildPlayerProfile(
       playedOn: game.playedOn,
       faction: result.faction,
       placement: result.placement,
-      lp: lpForPlacement(result.placement),
+      lp: lpForPlacement(result.placement, game.results.length),
       opponents: game.results
         .filter((r) => r.playerId !== player.id)
         .sort((a, b) => a.placement - b.placement)
@@ -244,7 +244,7 @@ export function buildFactionStats(players: Player[], games: Game[]): FactionStat
   for (const game of games) {
     for (const r of game.results) {
       const t = tallies.get(r.faction) ?? emptyTally();
-      addResult(t, r.placement);
+      addResult(t, r.placement, game.results.length);
       tallies.set(r.faction, t);
       if (r.placement === 1) {
         const m = winsByPlayer.get(r.faction) ?? new Map<string, number>();
@@ -267,6 +267,71 @@ export function buildFactionStats(players: Player[], games: Game[]): FactionStat
       topPlayer,
     };
   }).sort((a, b) => b.winrate - a.winrate || b.games - a.games);
+}
+
+// ---- One faction in depth --------------------------------------------------
+
+export interface FactionPlayerRow {
+  player: Player;
+  games: number;
+  wins: number;
+  winrate: number;
+  avgPlacement: number;
+  /** League points this player has earned playing this faction. */
+  lp: number;
+}
+
+export interface FactionDetail {
+  faction: FactionId;
+  games: number;
+  wins: number;
+  winrate: number;
+  avgPlacement: number;
+  /** Total league points earned by everyone who played this faction. */
+  lp: number;
+  /** How often it finished 1st, 2nd, 3rd and 4th. */
+  placements: [number, number, number, number];
+  /** Everyone who has played it: most games first, then most wins. */
+  players: FactionPlayerRow[];
+}
+
+/** How a single faction has done across `games`, and who plays it. */
+export function buildFactionDetail(faction: FactionId, players: Player[], games: Game[]): FactionDetail {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const total = emptyTally();
+  const placements: [number, number, number, number] = [0, 0, 0, 0];
+  const perPlayer = new Map<string, Tally>();
+
+  for (const game of games) {
+    for (const r of game.results) {
+      if (r.faction !== faction) continue;
+      addResult(total, r.placement, game.results.length);
+      placements[r.placement - 1] += 1;
+      const t = perPlayer.get(r.playerId) ?? emptyTally();
+      addResult(t, r.placement, game.results.length);
+      perPlayer.set(r.playerId, t);
+    }
+  }
+
+  const rows: FactionPlayerRow[] = [...perPlayer.entries()]
+    .flatMap(([id, t]) => {
+      const player = byId.get(id);
+      return player
+        ? [{ player, games: t.games, wins: t.wins, winrate: winrate(t), avgPlacement: avgPlacement(t), lp: t.lp }]
+        : [];
+    })
+    .sort((a, b) => b.games - a.games || b.wins - a.wins || a.player.name.localeCompare(b.player.name));
+
+  return {
+    faction,
+    games: total.games,
+    wins: total.wins,
+    winrate: winrate(total),
+    avgPlacement: avgPlacement(total),
+    lp: total.lp,
+    placements,
+    players: rows,
+  };
 }
 
 // ---- League-wide totals ---------------------------------------------------

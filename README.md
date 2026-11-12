@@ -10,7 +10,7 @@ Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres + Auth) · host
 
 Rules live in [`src/lib/league.ts`](src/lib/league.ts) and the database `seasons` table:
 
-- 4 players per game. LP by finish: **1st = 5, 2nd = 3, 3rd = 2, 4th = 1**.
+- A table seats 4 players (sometimes 3). LP by finish at a table of four: **1st = 5, 2nd = 3, 3rd = 2, 4th = 1**; at a table of three: **5 / 3 / 2**. Nights have rounds, each with several tables. The point values live in [`src/lib/league.ts`](src/lib/league.ts).
 - Seasons are explicit date ranges (Season 1: Jun 7 – Sep 7 2026, Season 2: Nov 1 – Dec 20 2026). Organizers add and edit them in `/admin`; they can't overlap. The player with the most LP at season end wins the prize pool.
 - Season ties: most wins, then best average placement.
 - LP is never stored — it's computed from placements, so changing the rules updates history too.
@@ -30,7 +30,7 @@ To see the site with demo data even when `.env.local` is set, run `node scripts/
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`, then `0006_name_safety.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
+2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`, then `0006_name_safety.sql`, then `0007_rounds_and_tables.sql`, then `0008_game_reports.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
 3. Copy `.env.example` to `.env.local` and fill in the project URL and publishable (or anon) key from *Project Settings → API*.
 4. *Authentication → Providers → Email*: turn **Confirm email** off, so players can sign up instantly. Set the Site URL under *Authentication → URL Configuration* to your Vercel domain.
 5. Make yourself an organizer: sign up on the site (or *Authentication → Users → Add user*), then run:
@@ -47,6 +47,7 @@ Organizer rights are enforced by the database (row-level security), not just the
 - Anyone can create an account at `/signup`, then choose a player name, favorite faction, bio, character portrait and a faction background for it at `/account`.
 - A player whose games an organizer already logged can **claim** that name; an organizer approves it in `/admin`, and the account then owns that history.
 - Signed-in players RSVP to upcoming game nights; the list is public.
+- Players can report a table they played in at `/report`. It waits in the organizer queue and only counts once an organizer approves it (organizers can correct it first). Players can have 5 reports waiting at once, can only report games they sat at, and can withdraw a report until it is reviewed.
 - Account links are private in the database. Public profiles only expose name, bio, favorite faction and avatar.
 
 ## Deploy (Vercel)

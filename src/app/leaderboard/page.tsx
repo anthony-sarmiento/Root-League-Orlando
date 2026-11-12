@@ -83,8 +83,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
         <div className="mt-4 grid items-end gap-6 md:grid-cols-2">
           <LpScale />
           <p className="max-w-[50ch] text-bark-soft">
-            Each game has four players, and where you finish sets your points. A night can include as many games as you
-            like, and they all count. If two players are level on LP, the
+            A table seats four players, sometimes three, and where you finish sets your points. On a table of three,
+            1st to 3rd earn 5, 3 and 2. A night can run a round or two and several tables, and every table counts. If two players are level on LP, the
             one with more wins ranks higher, then the better average finish.
           </p>
         </div>

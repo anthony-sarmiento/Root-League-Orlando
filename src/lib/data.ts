@@ -74,6 +74,7 @@ interface GameRow {
   id: string;
   played_on: string;
   session_id: string | null;
+  round?: number | null;
   game_results: { player_id: string; faction: FactionId; placement: Placement }[];
 }
 
@@ -111,15 +112,30 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
       (from, to) => db.from("sessions").select("id, date, title, location").order("date").range(from, to),
       "sessions",
     ),
-    fetchAll<GameRow>(
-      (from, to) =>
-        db
-          .from("games")
-          .select("id, played_on, session_id, game_results(player_id, faction, placement)")
-          .order("played_on")
-          .order("id")
-          .range(from, to),
-      "games",
+    orFallback(
+      () =>
+        fetchAll<GameRow>(
+          (from, to) =>
+            db
+              .from("games")
+              .select("id, played_on, session_id, round, game_results(player_id, faction, placement)")
+              .order("played_on")
+              .order("id")
+              .range(from, to),
+          "games",
+        ),
+      // Rounds not migrated yet: every game counts as Round 1.
+      () =>
+        fetchAll<GameRow>(
+          (from, to) =>
+            db
+              .from("games")
+              .select("id, played_on, session_id, game_results(player_id, faction, placement)")
+              .order("played_on")
+              .order("id")
+              .range(from, to),
+          "games",
+        ),
     ),
     orFallback(
       async () =>
@@ -159,6 +175,7 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
       id: g.id,
       playedOn: g.played_on,
       sessionId: g.session_id ?? undefined,
+      round: g.round ?? 1,
       results: g.game_results.map((r) => ({
         playerId: r.player_id,
         faction: r.faction,

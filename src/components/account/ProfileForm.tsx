@@ -57,13 +57,13 @@ export function ProfileForm({ mode, initial }: Props) {
       </label>
 
       <label className="block">
-        <span className="text-sm font-bold">About you</span>
+        <span className="text-sm font-bold">Bio</span>
         <textarea
           name="bio"
           maxLength={BIO_MAX}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          placeholder="How long have you played? Any dream matchups?"
+          placeholder="Tell the woodland what you stand for."
           className="field mt-1"
         />
         <span className="mt-1 block text-right text-sm text-bark-soft tabular">

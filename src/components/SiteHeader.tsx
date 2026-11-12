@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { SiteNav } from "@/components/SiteNav";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { countPendingReports } from "@/lib/reports";
 import { getViewer } from "@/lib/viewer";
 
 export async function SiteHeader() {
   const viewer = await getViewer();
+  const pendingReports = viewer?.isAdmin ? await countPendingReports() : 0;
 
   return (
     <header className="plank relative z-20">
@@ -32,7 +34,7 @@ export async function SiteHeader() {
         </div>
 
         <div className="order-3 w-full md:order-2 md:ml-auto md:w-auto">
-          <SiteNav isAdmin={viewer?.isAdmin === true} />
+          <SiteNav isAdmin={viewer?.isAdmin === true} pendingReports={pendingReports} />
         </div>
       </div>
     </header>

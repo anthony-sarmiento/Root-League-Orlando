@@ -22,9 +22,30 @@ describe("validateGameInput", () => {
     expect(validateGameInput({ ...valid, playedOn: "" })).toContain("Pick a valid date.");
   });
 
-  it("requires exactly four players", () => {
+  it("accepts a table of three", () => {
     const three = { ...valid, results: valid.results.slice(0, 3) };
-    expect(validateGameInput(three)[0]).toMatch(/exactly 4 players/);
+    expect(validateGameInput(three)).toEqual([]);
+  });
+
+  it("only allows tables of three or four", () => {
+    const two = { ...valid, results: valid.results.slice(0, 2) };
+    expect(validateGameInput(two)[0]).toMatch(/3 or 4 players/);
+    const five = { ...valid, results: [...valid.results, { playerId: "e", faction: "riverfolk" as const, placement: 4 as const }] };
+    expect(validateGameInput(five)[0]).toMatch(/3 or 4 players/);
+  });
+
+  it("needs places 1st to 3rd on a table of three", () => {
+    const skipped = {
+      ...valid,
+      results: [valid.results[0], valid.results[1], { ...valid.results[3], placement: 4 as const }],
+    };
+    expect(validateGameInput(skipped)).toContain("Finishing places must be 1st through 3rd, once each.");
+  });
+
+  it("checks the round", () => {
+    expect(validateGameInput({ ...valid, round: 2 })).toEqual([]);
+    expect(validateGameInput({ ...valid, round: 0 })[0]).toMatch(/Pick a round/);
+    expect(validateGameInput({ ...valid, round: 9 })[0]).toMatch(/Pick a round/);
   });
 
   it("rejects a player seated twice", () => {

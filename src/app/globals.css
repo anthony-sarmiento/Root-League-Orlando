@@ -21,8 +21,41 @@
   --color-forest-deep: #1b2a17;
   --color-night: #2b1d14;
 
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-nunito);
+  --font-display: var(--font-display-face);
+  --font-sans: var(--font-body-face);
+
+  /* Type scale. Small sizes stay open and readable; as sizes grow the line height and letter-spacing close in,
+     so a headline reads as one tight shape. Display sizes stop at 6rem. */
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.55;
+  --text-xl: 1.3125rem;
+  --text-xl--line-height: 1.35;
+  --text-xl--letter-spacing: -0.012em;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 1.2;
+  --text-2xl--letter-spacing: -0.02em;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.12;
+  --text-3xl--letter-spacing: -0.026em;
+  --text-4xl: 2.625rem;
+  --text-4xl--line-height: 1.06;
+  --text-4xl--letter-spacing: -0.03em;
+  --text-5xl: 3.5rem;
+  --text-5xl--line-height: 1.02;
+  --text-5xl--letter-spacing: -0.03em;
+  --text-6xl: 4.25rem;
+  --text-6xl--line-height: 0.98;
+  --text-6xl--letter-spacing: -0.034em;
+  --text-7xl: 5rem;
+  --text-7xl--line-height: 0.95;
+  --text-7xl--letter-spacing: -0.038em;
+  --text-8xl: 6rem;
+  --text-8xl--line-height: 0.92;
+  --text-8xl--letter-spacing: -0.04em;
 
   /* Depth: an offset plus a soft blur, never a hard block. */
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 3px rgba(75, 52, 38, 0.1),
@@ -59,11 +92,19 @@ body {
   overflow-x: clip;
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display), Georgia, serif;
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-  font-variation-settings: "SOFT" 100, "WONK" 0;
+/* In the base layer so the type-scale utilities (text-4xl and friends) can set size, leading and tracking. */
+@layer base {
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-weight: 750;
+    font-stretch: 90%;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+    letter-spacing: -0.025em;
+  }
+  h1 { letter-spacing: -0.04em; }
+  h2 { letter-spacing: -0.032em; }
+  h4 { letter-spacing: -0.012em; }
 }
 
 p { text-wrap: pretty; }
@@ -254,6 +295,8 @@ textarea.field { min-height: 6rem; resize: vertical; }
   min-height: 2.25rem;
   padding: 0.2rem 0.8rem;
 }
+.btn.big { min-height: 3.5rem; padding: 0.6rem 2rem; font-size: 1.2rem; gap: 0.65rem; }
+@media (max-width: 639px) { .btn.big { width: 100%; } }
 .btn.small { min-height: 2.25rem; padding: 0.2rem 1rem; font-size: 0.9rem; }
 
 /* -------------------------------------------------------------------- Tables */
@@ -596,6 +639,7 @@ textarea.field { min-height: 6rem; resize: vertical; }
 /* Trading-card style player cards. */
 .trade-card {
   position: relative;
+  color: var(--color-bark);
   display: flex;
   height: 100%;
   flex-direction: column;
@@ -651,6 +695,9 @@ textarea.field { min-height: 6rem; resize: vertical; }
   box-shadow: 0 6px 10px -6px rgba(75, 52, 38, 0.5);
 }
 .stat-cell { text-align: center; }
+.lp-cell { text-align: center; padding: 0.55rem 0.4rem; border-radius: 0.9rem; background: rgba(75, 52, 38, 0.1); }
+.lp-cell dt { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-bark-soft); }
+.lp-cell dd { font-family: var(--font-display), system-ui, sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; color: var(--color-acorn-deep); }
 .stat-cell dt { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-bark-soft); }
 .stat-cell dd { font-family: var(--font-display), Georgia, serif; font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
 
