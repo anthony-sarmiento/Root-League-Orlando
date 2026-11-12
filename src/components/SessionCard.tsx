@@ -47,7 +47,7 @@ export function SessionCard({ session, attendees, state, featured = false }: Pro
               {whenLabel(session.date)}
             </p>
           )}
-          <h3 className="font-display text-2xl leading-tight font-bold">
+          <h3 className="font-title text-2xl leading-tight font-bold">
             {weekday}, {formatDate(session.date, { weekday: undefined, year: undefined })}
           </h3>
           <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-bark-soft">

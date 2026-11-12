@@ -33,7 +33,7 @@ function ReportItem({ item, shared, names }: { item: QueuedReport; shared: Share
     <li className="space-y-3 rounded-2xl border-2 border-bark/20 bg-parchment/60 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-display text-xl font-bold">
+          <p className="font-title text-xl font-bold">
             {report.reporterName ?? "A player"} reported a table
           </p>
           <p className="text-sm text-bark-soft">
@@ -75,7 +75,7 @@ function ReportItem({ item, shared, names }: { item: QueuedReport; shared: Share
 
       {reviewing && (
         <div className="rounded-2xl border-2 border-moss/50 bg-paper/60 p-4">
-          <p className="mb-3 font-display text-lg font-bold">Check the table, fix anything that&apos;s off, then approve</p>
+          <p className="mb-3 font-title text-lg font-bold">Check the table, fix anything that&apos;s off, then approve</p>
           <LogGameForm
             {...shared}
             mode="review"

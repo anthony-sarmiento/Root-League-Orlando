@@ -107,7 +107,7 @@ export function AvatarPicker({ name, defaultAvatar = "", defaultBg, defaultCrop 
         </div>
         <div className="min-w-0 flex-1 basis-60 space-y-3">
           <div>
-            <p className="font-display text-xl font-bold">Your profile picture</p>
+            <p className="font-title text-xl font-bold">Your profile picture</p>
             <p className="text-sm text-bark-soft">
               {avatar ? "Drag the picture, or use the sliders, to line your character up." : "Pick a background, then a character."}
             </p>

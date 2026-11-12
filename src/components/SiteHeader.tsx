@@ -12,7 +12,7 @@ export async function SiteHeader() {
   return (
     <header className="plank relative z-20">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-8">
-        <Link href="/" className="order-1 font-display text-xl leading-tight font-bold text-parchment sm:text-3xl">
+        <Link href="/" className="order-1 font-title text-xl leading-tight font-bold text-parchment sm:text-3xl">
           Root League <span className="text-[#f2c868]">Orlando</span>
         </Link>
 

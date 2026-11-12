@@ -31,7 +31,7 @@ function ReportCard({ report, names }: { report: GameReport; names: Map<string, 
     <li className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-display text-xl font-bold">
+          <p className="font-title text-xl font-bold">
             {formatDate(report.playedOn, { weekday: "long" })}
             <span className="ml-3 text-sm font-semibold text-bark-soft">
               Round {report.round} · {results.length} players

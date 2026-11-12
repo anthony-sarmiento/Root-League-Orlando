@@ -41,7 +41,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
       </PageHeader>
 
       {season && phase === "finished" && leader && (
-        <p className="card stitched flex items-center justify-center gap-3 p-5 text-center font-display text-xl font-bold">
+        <p className="card stitched flex items-center justify-center gap-3 p-5 text-center font-title text-xl font-bold">
           <Trophy className="text-honey" size={28} aria-hidden="true" />
           <span>
             {season.label.split(" · ")[0]} champion: <span className="text-acorn-deep">{leader.player.name}</span> with{" "}

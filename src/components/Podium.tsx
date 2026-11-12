@@ -31,7 +31,7 @@ export function Podium({ rows, players }: { rows: LeaderboardRow[]; players: Pla
             <Avatar name={player.name} avatar={player.avatar} bg={player.avatarBg} crop={player.avatarCrop} size={step.avatar} />
             <Link
               href={`/players/${row.player.id}`}
-              className="mt-2 max-w-full truncate font-display text-base font-bold hover:text-moss-deep sm:text-lg"
+              className="mt-2 max-w-full truncate font-title text-lg font-bold hover:text-moss-deep sm:text-xl"
             >
               {row.player.name}
             </Link>

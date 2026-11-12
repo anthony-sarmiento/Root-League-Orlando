@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
+import { Almendra, Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getLeagueData } from "@/lib/data";
 
-// Bricolage Grotesque: a bold grotesque with ink-trap character, used condensed and tight for headings.
+// Almendra: a flared, calligraphic fantasy face for titles and headers (the closest widely available relative of
+// Luminari, which only ships with Apple devices). Bricolage Grotesque is kept for numbers and stats.
 // Instrument Sans: a quiet, slightly narrow sans for everything you read.
+const title = Almendra({ variable: "--font-title-face", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 const display = Bricolage_Grotesque({ variable: "--font-display-face", subsets: ["latin"], axes: ["opsz", "wdth"], display: "swap" });
 const body = Instrument_Sans({ variable: "--font-body-face", subsets: ["latin"], axes: ["wdth"], display: "swap" });
 
@@ -23,7 +25,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const { isSample } = await getLeagueData();
 
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} h-full`}>
+    <html lang="en" className={`${title.variable} ${display.variable} ${body.variable} h-full`}>
       <body className="flex min-h-full flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:font-bold">
           Skip to content

@@ -91,7 +91,7 @@ export default async function SessionsPage() {
                 <details className="card lift-card group">
                   <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-4 gap-y-3 p-4 sm:px-6">
                     <span className="min-w-0">
-                      <span className="block font-display text-xl font-bold">{formatDate(s.date, { weekday: "long" })}</span>
+                      <span className="block font-title text-xl font-bold">{formatDate(s.date, { weekday: "long" })}</span>
                       <span className="text-sm text-bark-soft">
                         {sessionGames.length} {sessionGames.length === 1 ? "table" : "tables"}
                         {roundsOf(sessionGames).length > 1 && ` · ${roundsOf(sessionGames).length} rounds`}

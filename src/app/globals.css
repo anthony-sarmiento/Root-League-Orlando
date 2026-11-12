@@ -21,11 +21,13 @@
   --color-forest-deep: #1b2a17;
   --color-night: #2b1d14;
 
+  --font-title: var(--font-title-face);
   --font-display: var(--font-display-face);
   --font-sans: var(--font-body-face);
 
-  /* Type scale. Small sizes stay open and readable; as sizes grow the line height and letter-spacing close in,
-     so a headline reads as one tight shape. Display sizes stop at 6rem. */
+  /* Type scale. Body sizes stay open and readable. Headings are set in the calligraphic title face, which wants
+     normal letter-spacing and a little extra leading; only the largest sizes tighten, and only slightly.
+     Display sizes stop at 6rem. */
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.5;
   --text-base: 1rem;
@@ -34,28 +36,23 @@
   --text-lg--line-height: 1.55;
   --text-xl: 1.3125rem;
   --text-xl--line-height: 1.35;
-  --text-xl--letter-spacing: -0.012em;
-  --text-2xl: 1.625rem;
+  --text-2xl: 1.75rem;
   --text-2xl--line-height: 1.2;
-  --text-2xl--letter-spacing: -0.02em;
-  --text-3xl: 2rem;
-  --text-3xl--line-height: 1.12;
-  --text-3xl--letter-spacing: -0.026em;
-  --text-4xl: 2.625rem;
-  --text-4xl--line-height: 1.06;
-  --text-4xl--letter-spacing: -0.03em;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 1.1;
   --text-5xl: 3.5rem;
-  --text-5xl--line-height: 1.02;
-  --text-5xl--letter-spacing: -0.03em;
+  --text-5xl--line-height: 1.06;
   --text-6xl: 4.25rem;
-  --text-6xl--line-height: 0.98;
-  --text-6xl--letter-spacing: -0.034em;
+  --text-6xl--line-height: 1.02;
+  --text-6xl--letter-spacing: -0.005em;
   --text-7xl: 5rem;
-  --text-7xl--line-height: 0.95;
-  --text-7xl--letter-spacing: -0.038em;
+  --text-7xl--line-height: 1;
+  --text-7xl--letter-spacing: -0.008em;
   --text-8xl: 6rem;
-  --text-8xl--line-height: 0.92;
-  --text-8xl--letter-spacing: -0.04em;
+  --text-8xl--line-height: 0.96;
+  --text-8xl--letter-spacing: -0.01em;
 
   /* Depth: an offset plus a soft blur, never a hard block. */
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 3px rgba(75, 52, 38, 0.1),
@@ -95,17 +92,13 @@ body {
 /* In the base layer so the type-scale utilities (text-4xl and friends) can set size, leading and tracking. */
 @layer base {
   h1, h2, h3, h4 {
-    font-family: var(--font-display), system-ui, sans-serif;
-    font-weight: 750;
-    font-stretch: 90%;
-    font-optical-sizing: auto;
+    font-family: var(--font-title), Georgia, serif;
+    font-weight: 700;
     text-wrap: balance;
-    letter-spacing: -0.025em;
+    letter-spacing: 0.005em;
   }
-  h1 { letter-spacing: -0.04em; }
-  h2 { letter-spacing: -0.032em; }
-  h4 { letter-spacing: -0.012em; }
 }
+
 
 p { text-wrap: pretty; }
 
@@ -618,9 +611,14 @@ textarea.field { min-height: 6rem; resize: vertical; }
   position: absolute;
   top: 0;
   left: 0;
-  width: 58%;
-  height: 62%;
-  background: radial-gradient(ellipse 100% 100% at 0% 0%, #2b2016 54%, rgba(43, 32, 22, 0.55) 78%, rgba(43, 32, 22, 0) 100%);
+  width: 56%;
+  height: 60%;
+  background: #2b2016;
+  /* A rectangle that is solid over the corner and fades out on its inner sides, so the printed title can't show. */
+  -webkit-mask-image: linear-gradient(to right, #000 62%, transparent), linear-gradient(to bottom, #000 62%, transparent);
+  mask-image: linear-gradient(to right, #000 62%, transparent), linear-gradient(to bottom, #000 62%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   pointer-events: none;
 }
 

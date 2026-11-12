@@ -72,7 +72,7 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
               </span>
             ))}
           </div>
-          <p className="font-display text-xl font-bold">
+          <p className="font-title text-xl font-bold">
             {players.length} {players.length === 1 ? "player" : "players"} in the league
           </p>
         </div>
@@ -163,13 +163,13 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
                         className="portrait mx-auto h-full w-full scale-[1.12] object-contain [transform-origin:50%_30%]"
                       />
                     ) : (
-                      <span className="flex h-full items-center justify-center font-display text-7xl font-bold text-parchment/90">
+                      <span className="flex h-full items-center justify-center font-title text-7xl font-bold text-parchment/90">
                         {p.name.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <div className="trade-plate">
-                    <h2 className="truncate font-display text-2xl font-bold">{p.name}</h2>
+                    <h2 className="truncate font-title text-2xl font-bold">{p.name}</h2>
                   </div>
                   <div className="flex flex-1 flex-col gap-3 px-5 pt-4 pb-5">
                     <dl className="grid grid-cols-2 gap-2">

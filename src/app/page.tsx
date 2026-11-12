@@ -21,6 +21,10 @@ import { getViewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
 
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+/** Small numbers in words: the title face draws its digits in an old-style that can read oddly in a heading. */
+const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n);
+
 export default async function Home() {
   const [{ players, games, sessions, seasons, signups }, viewer] = await Promise.all([getLeagueData(), getViewer()]);
   const today = todayISO();
@@ -59,7 +63,7 @@ export default async function Home() {
         <div className="grid gap-6 pt-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] md:items-stretch lg:pt-14">
           <div className="flex flex-col justify-between gap-10 pb-10 md:pb-14">
             <div className="space-y-6">
-              <h1 className="hero-in text-6xl sm:text-7xl lg:text-8xl">
+              <h1 className="hero-in text-5xl sm:text-6xl xl:text-7xl 2xl:text-8xl">
                 <span className="text-[#f2c868]">Root</span> League
               </h1>
               <p className="hero-in d2 max-w-[46ch] text-lg text-parchment/90 sm:text-xl">
@@ -206,7 +210,7 @@ export default async function Home() {
         <Embers count={22} />
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <h2 className="text-5xl font-bold sm:text-7xl">
-            Every faction plays <span className="text-[#f2c868]">differently!</span>
+            <span className="text-[#f2c868]">GEEK&apos;D</span> ROOT LEAGUE
           </h2>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/players" className="btn acorn">Meet the Players</Link>
@@ -222,7 +226,7 @@ export default async function Home() {
       <section className="space-y-10">
         <SectionHeading
           onDark
-          title={`The ${FACTIONS.length} factions`}
+          title={`The ${numberWord(FACTIONS.length)} factions`}
           description="Current League Faction Winrates"
           action={
             <Link href="/factions" className="btn acorn big">
@@ -242,7 +246,7 @@ export default async function Home() {
                     <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={320} height={320} className="h-32 w-auto" />
                   </span>
                   <span className="faction-icon inline-flex w-fit"><FactionBadge faction={f.id} size={56} /></span>
-                  <span className="mt-3 font-display text-lg leading-tight font-bold">{f.name}</span>
+                  <span className="mt-3 font-title text-xl leading-tight font-bold">{f.name}</span>
                   <span className="mt-0.5 text-sm text-parchment/85">
                     {stat && stat.games > 0
                       ? `${pct(stat.winrate)} wins · ${stat.games} ${stat.games === 1 ? "game" : "games"}`

@@ -24,7 +24,7 @@ function TableCard({ game, playerName, shared }: { game: Game; playerName: Map<s
   if (editing) {
     return (
       <li className="rounded-2xl border-2 border-moss/50 bg-paper/60 p-4 md:col-span-2">
-        <p className="mb-3 font-display text-lg font-bold">Edit this table</p>
+        <p className="mb-3 font-title text-lg font-bold">Edit this table</p>
         <LogGameForm {...shared} game={game} onSaved={() => setEditing(false)} />
       </li>
     );
@@ -87,7 +87,7 @@ function RoundSection({
       )}
       {adding ? (
         <div className="rounded-2xl border-2 border-dashed border-bark/25 p-4">
-          <p className="mb-3 font-display text-lg font-bold">Add a table to Round {round}</p>
+          <p className="mb-3 font-title text-lg font-bold">Add a table to Round {round}</p>
           <LogGameForm {...shared} defaultSessionId={session.id} defaultRound={round} />
         </div>
       ) : (
@@ -181,7 +181,7 @@ function NightCard({
         className="flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left sm:px-6"
       >
         <span className="min-w-0">
-          <span className="block font-display text-xl font-bold">{formatDate(session.date, { weekday: "long" })}</span>
+          <span className="block font-title text-xl font-bold">{formatDate(session.date, { weekday: "long" })}</span>
           <span className="block truncate text-sm text-bark-soft">
             {session.title} · {session.location} · {games.length} {games.length === 1 ? "table" : "tables"} ·{" "}
             {used.length || 1} {(used.length || 1) === 1 ? "round" : "rounds"}
