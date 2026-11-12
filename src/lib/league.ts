@@ -63,9 +63,11 @@ export interface Faction {
   icon: string;
   /** Tileable patterned background in the faction's colours, for card banners. */
   pattern: string;
+  /** A smaller copy of the pattern for cards and tiles. */
+  patternSm: string;
 }
 
-const FACTION_DATA: Omit<Faction, "icon" | "pattern">[] = [
+const FACTION_DATA: Omit<Faction, "icon" | "pattern" | "patternSm">[] = [
   { id: "marquise", name: "Marquise de Cat", color: "#d9762b", emoji: "🐱" },
   { id: "eyrie", name: "Eyrie Dynasties", color: "#3f6fa8", emoji: "🦅" },
   { id: "alliance", name: "Woodland Alliance", color: "#5f9a4a", emoji: "🌿" },
@@ -87,6 +89,7 @@ export const FACTIONS: Faction[] = FACTION_DATA.map((f) => ({
   ...f,
   icon: `/factions/${f.id}.webp`,
   pattern: `/patterns/${f.id}.webp`,
+  patternSm: `/patterns/sm/${f.id}.webp`,
 }));
 
 const FACTION_INDEX = new Map(FACTIONS.map((f) => [f.id, f]));

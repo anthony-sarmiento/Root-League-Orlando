@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql", "0009_connect_accounts.sql", "0010_privacy.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql", "0009_connect_accounts.sql", "0010_privacy.sql", "0011_tighten_helper.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -96,8 +96,9 @@ const cLink = await as("authenticated", who("c"), () => db.query("select player_
 ok(cLink.rows[0]?.player_id === orphan, "C is now linked to 'Orphan'");
 const leftover = await as("authenticated", who("admin"), () => db.query("select count(*)::int n from player_claims"));
 ok(leftover.rows[0].n === 0, "claim is removed after approval");
-const claimed = await as("anon", null, () => db.query("select * from claimed_player_ids()"));
-ok(claimed.rows.length === 2, "claimed_player_ids lists linked players (ids only)");
+await mustFail("anon cannot ask which names are linked to accounts", () => as("anon", null, () => db.query("select * from claimed_player_ids()")));
+const claimed = await as("authenticated", who("d"), () => db.query("select * from claimed_player_ids()"));
+ok(claimed.rows.length === 2, "a signed-in user can use claimed_player_ids (ids only)");
 
 // Claim then create a fresh profile: the pending claim is dropped.
 await as("authenticated", who("admin"), () => db.query("insert into players (name) values ('Wanderer')"));

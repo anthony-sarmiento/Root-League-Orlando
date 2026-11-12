@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import { critterSrc } from "@/lib/critters";
+import { imageSize } from "@/lib/image-sizes.generated";
 
 /** Sparks drifting up out of the page. Positions are fixed numbers so server and client agree. */
 export function Embers({ count = 18 }: { count?: number }) {
@@ -31,7 +32,7 @@ export function Embers({ count = 18 }: { count?: number }) {
 export function BannerArt() {
   return (
     <div className="banner-art" aria-hidden="true">
-      <Image src="/art/banner.webp" alt="" width={1900} height={650} sizes="100vw" className="h-auto w-full" />
+      <Image src="/art/banner.webp" smallSrc="/art/banner-sm.webp" alt="" width={1500} height={513} className="h-auto w-full" />
       <span className="banner-art-cover" />
     </div>
   );
@@ -51,7 +52,7 @@ export function CritterCrew({ members }: { members: CrewMember[] }) {
     <div className="crew" aria-hidden="true">
       {members.map((m) => (
         <span key={m.id} style={{ width: m.w, "--f": m.f ?? 1 } as CSSProperties}>
-          <Image src={critterSrc(m.id)} alt="" width={320} height={320} className="h-auto w-full" />
+          <Image src={critterSrc(m.id)} alt="" width={imageSize(critterSrc(m.id))[0]} height={imageSize(critterSrc(m.id))[1]} className="h-auto w-full" />
         </span>
       ))}
     </div>
@@ -62,7 +63,7 @@ export function CritterCrew({ members }: { members: CrewMember[] }) {
 export function Perch({ id, w = 90, right = "2rem", flip = false }: { id: string; w?: number; right?: string; flip?: boolean }) {
   return (
     <span className="perch" style={{ width: w, right, top: 6, transform: `translateY(-86%) scaleX(${flip ? -1 : 1})` }} aria-hidden="true">
-      <Image src={critterSrc(id)} alt="" width={320} height={320} className="h-auto w-full" />
+      <Image src={critterSrc(id)} alt="" width={imageSize(critterSrc(id))[0]} height={imageSize(critterSrc(id))[1]} className="h-auto w-full" />
     </span>
   );
 }

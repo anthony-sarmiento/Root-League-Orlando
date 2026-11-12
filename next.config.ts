@@ -12,12 +12,16 @@ const securityHeaders = [
   // The site uses none of these browser powers, so turn them off.
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), interest-cohort=()",
+    value:
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=(), interest-cohort=()",
   },
   // Always HTTPS, including subdomains, for two years.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   // Pages opened from here can't reach back into this window, and vice versa.
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // Other sites can't embed this site's pictures, fonts or scripts.
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
 ];
 
@@ -27,6 +31,10 @@ const privateHeaders = [
   { key: "Cache-Control", value: "private, no-store, max-age=0" },
 ];
 
+// Fonts and artwork rarely change, so browsers may keep them for a week (and show a stale copy for a day while
+// fetching a fresh one). Pages themselves are never cached here.
+const staticAssetHeaders = [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }];
+
 const nextConfig: NextConfig = {
   // Don't advertise the framework in a response header.
   poweredByHeader: false,
@@ -35,6 +43,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      ...["fonts", "avatars", "art", "patterns", "factions"].map((dir) => ({
+        source: `/${dir}/:path*`,
+        headers: staticAssetHeaders,
+      })),
       ...["/admin", "/account", "/report", "/login", "/signup"].map((base) => ({
         source: `${base}/:path*`,
         headers: privateHeaders,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FactionId, Game, Placement, Player } from "./league";
 import { DEFAULT_SEASONS, featuredSeason, seasonByNumber, seasonForDate, seasonPhase } from "./seasons";
-import { buildFactionDetail, buildFactionStats, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
+import { buildFactionDetail, buildFactionStats, buildMatchupTable, pickMatchups, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
 
 const players: Player[] = ["a", "b", "c", "d", "e"].map((id) => ({ id, name: id.toUpperCase() }));
 
@@ -226,5 +226,41 @@ describe("tables of three", () => {
     const rows = buildLeaderboard(players, [three, game("g4", "2026-11-03", ["c", "a", "b", "d"])]);
     expect(rows.find((r) => r.player.id === "a")?.lp).toBe(5 + 3);
     expect(rows.find((r) => r.player.id === "c")?.lp).toBe(2 + 5);
+  });
+});
+
+describe("faction matchups", () => {
+  // Marquise beats Vagabond every time, beats Eyrie 3 of 4 tables, and loses to Alliance at 2 of 4.
+  const games = [
+    game("m1", "2026-11-03", ["a", "b", "c", "d"], ["marquise", "eyrie", "alliance", "vagabond"]),
+    game("m2", "2026-11-04", ["a", "b", "c", "d"], ["marquise", "eyrie", "alliance", "vagabond"]),
+    game("m3", "2026-11-05", ["a", "b", "c", "d"], ["alliance", "eyrie", "marquise", "vagabond"]),
+    game("m4", "2026-11-06", ["a", "b", "c", "d"], ["alliance", "marquise", "eyrie", "vagabond"]),
+  ];
+
+  it("counts who finished above whom at shared tables", () => {
+    const m = buildMatchupTable(games).get("marquise")!.get("eyrie")!;
+    expect(m).toEqual({ opponent: "eyrie", tables: 4, wins: 3, losses: 1 });
+    expect(buildMatchupTable(games).get("eyrie")!.get("marquise")).toEqual({ opponent: "marquise", tables: 4, wins: 1, losses: 3 });
+  });
+
+  it("names the faction it loses to most, and the one it beats most", () => {
+    const { rival, best } = pickMatchups(buildMatchupTable(games).get("marquise"));
+    expect(rival?.opponent).toBe("alliance"); // lost to Alliance at 2 of 4 tables
+    expect(best?.opponent).toBe("vagabond"); // beat Vagabond at 4 of 4 tables
+  });
+
+  it("needs enough shared tables and a real win or loss before naming anyone", () => {
+    const one = [game("x", "2026-11-03", ["a", "b", "c", "d"])];
+    expect(pickMatchups(buildMatchupTable(one).get("marquise"))).toMatchObject({ rival: null, best: null });
+    expect(pickMatchups(buildMatchupTable([]).get("marquise"))).toEqual({ matchups: [], rival: null, best: null });
+    // Vagabond always finishes last, so it never beats anyone and has no best matchup.
+    expect(pickMatchups(buildMatchupTable(games).get("vagabond")).best).toBeNull();
+  });
+
+  it("is available on the faction pages' data", () => {
+    expect(buildFactionDetail("marquise", players, games).matchups.best?.opponent).toBe("vagabond");
+    const row = buildFactionStats(players, games).find((r) => r.faction === "marquise")!;
+    expect(row.rival?.opponent).toBe("alliance");
   });
 });

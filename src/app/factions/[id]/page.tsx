@@ -13,7 +13,7 @@ import { ordinal, pct } from "@/lib/format";
 import { FACTIONS, LP_BY_PLACEMENT, PLAYERS_PER_GAME, getFaction, type Placement } from "@/lib/league";
 import { asFactionId } from "@/lib/profile";
 import { featuredSeason, seasonPhase, todayISO } from "@/lib/seasons";
-import { buildFactionDetail, buildFactionStats, gamesInSeason, type FactionDetail } from "@/lib/stats";
+import { MIN_MATCHUP_TABLES, buildFactionDetail, buildFactionStats, gamesInSeason, type FactionDetail, type Matchup } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +71,35 @@ function StatsCard({ title, note, detail, color }: { title: string; note?: strin
         </div>
       )}
     </section>
+  );
+}
+
+/** One highlighted matchup: who, and how often it went that way. */
+function MatchupCard({ kind, matchup, faction }: { kind: "rival" | "best"; matchup: Matchup | null; faction: string }) {
+  const rival = kind === "rival";
+  const count = matchup ? (rival ? matchup.losses : matchup.wins) : 0;
+  return (
+    <div className="rounded-2xl border-2 border-bark/20 bg-paper/60 p-5">
+      <p className="text-sm font-semibold tracking-[0.08em] text-bark-soft uppercase">{rival ? "Rival faction" : "Best matchup"}</p>
+      {matchup ? (
+        <>
+          <Link href={`/factions/${matchup.opponent}`} className="mt-3 inline-flex hover:text-moss-deep">
+            <FactionBadge faction={matchup.opponent} size={56} showName />
+          </Link>
+          <p className="mt-3 text-bark-soft">
+            {faction} {rival ? "finished below" : "finished above"} them at{" "}
+            <strong className="text-bark">
+              {count} of {matchup.tables}
+            </strong>{" "}
+            shared tables ({pct(count / matchup.tables)}).
+          </p>
+        </>
+      ) : (
+        <p className="mt-3 text-bark-soft">
+          Not enough tables yet. It takes {MIN_MATCHUP_TABLES} shared tables with another faction to name one.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -163,6 +192,59 @@ export default async function FactionPage({ params }: PageProps<"/factions/[id]"
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {allTime.games > 0 && (
+        <section className="card p-6 sm:p-8">
+          <h2 className="text-3xl font-bold">Matchups</h2>
+          <p className="mt-1 text-bark-soft">
+            Against each faction it has shared a table with: who finished higher. The rival is the faction it loses to
+            most often, the best matchup the one it beats most often.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <MatchupCard kind="rival" matchup={allTime.matchups.rival} faction={faction.name} />
+            <MatchupCard kind="best" matchup={allTime.matchups.best} faction={faction.name} />
+          </div>
+          {allTime.matchups.matchups.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <table className="woods-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Against</th>
+                    <th scope="col" className="num">Tables</th>
+                    <th scope="col" className="num">Won</th>
+                    <th scope="col" className="num">Lost</th>
+                    <th scope="col" className="hidden sm:table-cell">Record</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allTime.matchups.matchups.map((m) => (
+                    <tr key={m.opponent}>
+                      <td>
+                        <Link href={`/factions/${m.opponent}`} className="inline-flex hover:text-moss-deep">
+                          <FactionBadge faction={m.opponent} size={32} showName />
+                        </Link>
+                      </td>
+                      <td className="num">{m.tables}</td>
+                      <td className="num">{m.wins}</td>
+                      <td className="num">{m.losses}</td>
+                      <td className="hidden sm:table-cell">
+                        <div
+                          className="flex h-2.5 w-28 overflow-hidden rounded-full bg-parchment-deep"
+                          role="img"
+                          aria-label={`Finished above ${m.wins} times and below ${m.losses} times out of ${m.tables}`}
+                        >
+                          <div className="h-full bg-moss" style={{ width: `${(m.wins / m.tables) * 100}%` }} />
+                          <div className="h-full bg-berry" style={{ width: `${(m.losses / m.tables) * 100}%` }} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       )}
 

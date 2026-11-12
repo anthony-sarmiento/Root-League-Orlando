@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 
 /** The shared frame for sign-in and sign-up: the form on the left, the Woodland Alliance on the right. */
 export function AuthShell({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {

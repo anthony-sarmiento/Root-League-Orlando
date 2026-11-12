@@ -44,6 +44,8 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                 <th scope="col">Win rate</th>
                 <th scope="col" className="num hidden sm:table-cell">Avg place</th>
                 <th scope="col" className="hidden md:table-cell">Top player</th>
+                <th scope="col" className="hidden lg:table-cell">Rival</th>
+                <th scope="col" className="hidden lg:table-cell">Best matchup</th>
               </tr>
             </thead>
             <tbody>
@@ -97,6 +99,17 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
                         <span className="text-bark-soft">–</span>
                       )}
                     </td>
+                    {[r.rival, r.best].map((m, i) => (
+                      <td key={i} className="hidden lg:table-cell">
+                        {m ? (
+                          <Link href={`/factions/${m.opponent}`} className="inline-flex hover:text-moss-deep">
+                            <FactionBadge faction={m.opponent} size={30} showName />
+                          </Link>
+                        ) : (
+                          <span className="text-bark-soft">–</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 );
               })}
@@ -105,7 +118,8 @@ export default async function FactionsPage({ searchParams }: PageProps<"/faction
         </div>
         <p className="border-t-2 border-dashed border-bark/15 px-5 py-4 text-sm text-bark-soft">
           In a {PLAYERS_PER_GAME}-player game an evenly matched faction wins {pct(fairShare)} of the time. The tick on
-          each bar marks that line.
+          each bar marks that line. A faction&apos;s rival is the one it finishes below most often at shared tables, and its
+          best matchup the one it finishes above most often (two shared tables needed).
         </p>
       </section>
     </div>

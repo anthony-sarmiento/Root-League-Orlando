@@ -18,9 +18,12 @@ function ffmpeg(args) {
 }
 
 /** Resize to fit within maxW x maxH (never upscale) and write WebP, keeping transparency. */
-function toWebp(input, output, { maxW, maxH = maxW, quality = 80 }) {
+function toWebp(input, output, { maxW, maxH = maxW, quality = 80, scale: enlarge }) {
   mkdirSync(path.dirname(output), { recursive: true });
-  const scale = `scale='min(${maxW},iw)':'min(${maxH},ih)':force_original_aspect_ratio=decrease`;
+  // `enlarge` (for tiny source icons) scales up by that factor; otherwise images are only ever shrunk.
+  const scale = enlarge
+    ? `scale=iw*${enlarge}:ih*${enlarge}:flags=lanczos`
+    : `scale='min(${maxW},iw)':'min(${maxH},ih)':force_original_aspect_ratio=decrease`;
   ffmpeg(["-i", input, "-vf", scale, "-c:v", "libwebp", "-quality", String(quality), "-compression_level", "6", output]);
 }
 
@@ -55,7 +58,7 @@ const FACTION_ICONS = {
   knaves: "Knaves_of_the_Deepwood_-_Symbol.webp",
 };
 for (const [id, file] of Object.entries(FACTION_ICONS)) {
-  toWebp(find(file), path.join(PUBLIC, "factions", `${id}.webp`), { maxW: 192, quality: 85 });
+  toWebp(find(file), path.join(PUBLIC, "factions", `${id}.webp`), { maxW: 112, quality: 85 });
 }
 
 // ---- Faction patterns (card banners) ---------------------------------------
@@ -75,16 +78,21 @@ const FACTION_PATTERNS = {
   knaves: "RootBG_Knaves.png",
 };
 for (const [id, file] of Object.entries(FACTION_PATTERNS)) {
-  toWebp(find(file), path.join(PUBLIC, "patterns", `${id}.webp`), { maxW: 900, quality: 68 });
+  toWebp(find(file), path.join(PUBLIC, "patterns", `${id}.webp`), { maxW: 700, quality: 42 });
+  // A small copy for cards and tiles, which show the pattern at about 300-360px.
+  toWebp(find(file), path.join(PUBLIC, "patterns", "sm", `${id}.webp`), { maxW: 400, quality: 58 });
 }
 
 // ---- Hero art -----------------------------------------------------
 toWebp(find("141.png"), path.join(PUBLIC, "art", "hero.webp"), { maxW: 520, quality: 85 });
 // Wide banner art for the home page (the logo in its corner is covered by the page, never shown).
-toWebp(find("root-banner (1).webp"), path.join(PUBLIC, "art", "banner.webp"), { maxW: 1900, quality: 82 });
+toWebp(find("root-banner (1).webp"), path.join(PUBLIC, "art", "banner.webp"), { maxW: 1500, quality: 66 });
+// A smaller copy for phones.
+toWebp(find("root-banner (1).webp"), path.join(PUBLIC, "art", "banner-sm.webp"), { maxW: 800, quality: 66 });
 // Tiny woodland-folk icons, used as decorative bullets.
 for (const [id, file] of Object.entries({ bunny: "Bunny_Icon.png", fox: "Fox_Icon.png", mouse: "Mouse_Icon.png" })) {
-  toWebp(find(file), path.join(PUBLIC, "art", `${id}.webp`), { maxW: 96, quality: 90 });
+  // The source icons are only about 50px, so they are enlarged 2.5x: the browser would stretch them on sharp screens anyway.
+  toWebp(find(file), path.join(PUBLIC, "art", `${id}.webp`), { maxW: 160, quality: 90, scale: 2.5 });
 }
 
 // ---- Player avatars ---------------------------------------------------------
@@ -115,6 +123,8 @@ const avatars = portraits.map((p) => {
   if (used.has(id)) id = `${id}-${slug(p.group)}`;
   used.add(id);
   toWebp(p.file, path.join(PUBLIC, "avatars", `${id}.webp`), { maxW: 320, quality: 80 });
+  // A small copy for list rows and chips (Avatar uses it at 96px and under).
+  toWebp(p.file, path.join(PUBLIC, "avatars", "sm", `${id}.webp`), { maxW: 160, quality: 78 });
   return { id, name: p.name, group: p.group, src: `/avatars/${id}.webp` };
 });
 

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import Link from "next/link";
 import { ArrowRight, Crown, Trophy } from "lucide-react";
 import { Banner } from "@/components/Banner";
@@ -11,6 +11,7 @@ import { Podium } from "@/components/Podium";
 import { SectionHeading } from "@/components/SectionHeading";
 import { SessionCard } from "@/components/SessionCard";
 import { FACTION_CRITTER, critterSrc } from "@/lib/critters";
+import { imageSize } from "@/lib/image-sizes.generated";
 import { getLeagueData } from "@/lib/data";
 import { formatDate, ordinal, pct } from "@/lib/format";
 import { FACTIONS, PLAYERS_PER_GAME } from "@/lib/league";
@@ -237,13 +238,13 @@ export default async function Home() {
         <ul className="tilt-tiles grid grid-cols-2 gap-x-3 gap-y-20 pt-12 sm:gap-x-4 md:grid-cols-3 lg:grid-cols-5">
           {FACTIONS.map((f, i) => {
             const stat = factionStats.get(f.id);
-            const style = { "--pattern": `url(${f.pattern})`, "--tint": f.color } as CSSProperties;
+            const style = { "--pattern": `url(${f.patternSm})`, "--tint": f.color } as CSSProperties;
             return (
               <li key={f.id}>
                 <Link href={`/factions/${f.id}`} className="faction-tile h-full" style={style}>
                   <span className="tile-bg" aria-hidden="true" />
                   <span className="tile-critter" style={{ "--r": `${[-7, 6, -4, 8, -6][i % 5]}deg` } as CSSProperties} aria-hidden="true">
-                    <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={320} height={320} className="h-32 w-auto" />
+                    <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={imageSize(critterSrc(FACTION_CRITTER[f.id]))[0]} height={imageSize(critterSrc(FACTION_CRITTER[f.id]))[1]} className="h-32 w-auto" />
                   </span>
                   <span className="faction-icon inline-flex w-fit"><FactionBadge faction={f.id} size={56} /></span>
                   <span className="mt-3 font-title text-xl leading-tight font-bold">{f.name}</span>

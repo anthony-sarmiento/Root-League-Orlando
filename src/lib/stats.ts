@@ -225,6 +225,70 @@ export function buildPlayerProfile(
   };
 }
 
+// ---- Faction matchups -----------------------------------------------------
+
+/** How one faction has done against another at shared tables: a faction "beats" another by finishing above it. */
+export interface Matchup {
+  opponent: FactionId;
+  /** Tables where both were seated. */
+  tables: number;
+  wins: number;
+  losses: number;
+}
+
+/** A matchup needs at least this many shared tables before it can name a rival or a best matchup. */
+export const MIN_MATCHUP_TABLES = 2;
+
+/** Every faction's record against every other faction it has shared a table with. */
+export function buildMatchupTable(games: Game[]): Map<FactionId, Map<FactionId, Matchup>> {
+  const table = new Map<FactionId, Map<FactionId, Matchup>>();
+  const cell = (a: FactionId, b: FactionId): Matchup => {
+    const row = table.get(a) ?? new Map<FactionId, Matchup>();
+    table.set(a, row);
+    const m = row.get(b) ?? { opponent: b, tables: 0, wins: 0, losses: 0 };
+    row.set(b, m);
+    return m;
+  };
+  for (const game of games) {
+    for (const a of game.results) {
+      for (const b of game.results) {
+        if (a.faction === b.faction) continue;
+        const m = cell(a.faction, b.faction);
+        m.tables += 1;
+        if (a.placement < b.placement) m.wins += 1;
+        else if (a.placement > b.placement) m.losses += 1;
+      }
+    }
+  }
+  return table;
+}
+
+export interface FactionMatchups {
+  /** Everyone it has met, most tables first. */
+  matchups: Matchup[];
+  /** The faction it loses to most often (by share of shared tables), if there is enough to say. */
+  rival: Matchup | null;
+  /** The faction it beats most often (by share of shared tables), if there is enough to say. */
+  best: Matchup | null;
+}
+
+const order = new Map(FACTIONS.map((f, i) => [f.id, i]));
+
+export function pickMatchups(row: Map<FactionId, Matchup> | undefined): FactionMatchups {
+  const matchups = [...(row?.values() ?? [])].sort(
+    (a, b) => b.tables - a.tables || order.get(a.opponent)! - order.get(b.opponent)!,
+  );
+  // Rates compared as cross-multiplied fractions would be exact; plain division is fine at these sizes.
+  const enough = matchups.filter((m) => m.tables >= MIN_MATCHUP_TABLES);
+  const top = (key: "wins" | "losses"): Matchup | null => {
+    const ranked = enough
+      .filter((m) => m[key] > 0)
+      .sort((a, b) => b[key] / b.tables - a[key] / a.tables || b.tables - a.tables || order.get(a.opponent)! - order.get(b.opponent)!);
+    return ranked[0] ?? null;
+  };
+  return { matchups, rival: top("losses"), best: top("wins") };
+}
+
 // ---- Faction stats --------------------------------------------------------
 
 export interface FactionStatRow {
@@ -234,12 +298,15 @@ export interface FactionStatRow {
   winrate: number;
   avgPlacement: number;
   topPlayer: { player: Player; wins: number } | null;
+  rival: Matchup | null;
+  best: Matchup | null;
 }
 
 export function buildFactionStats(players: Player[], games: Game[]): FactionStatRow[] {
   const byId = new Map(players.map((p) => [p.id, p]));
   const tallies = new Map<FactionId, Tally>();
   const winsByPlayer = new Map<FactionId, Map<string, number>>();
+  const matchupTable = buildMatchupTable(games);
 
   for (const game of games) {
     for (const r of game.results) {
@@ -265,6 +332,8 @@ export function buildFactionStats(players: Player[], games: Game[]): FactionStat
       winrate: winrate(t),
       avgPlacement: avgPlacement(t),
       topPlayer,
+      rival: pickMatchups(matchupTable.get(f.id)).rival,
+      best: pickMatchups(matchupTable.get(f.id)).best,
     };
   }).sort((a, b) => b.winrate - a.winrate || b.games - a.games);
 }
@@ -293,6 +362,8 @@ export interface FactionDetail {
   placements: [number, number, number, number];
   /** Everyone who has played it: most games first, then most wins. */
   players: FactionPlayerRow[];
+  /** Head-to-head record against every other faction, plus the rival and best matchup. */
+  matchups: FactionMatchups;
 }
 
 /** How a single faction has done across `games`, and who plays it. */
@@ -331,6 +402,7 @@ export function buildFactionDetail(faction: FactionId, players: Player[], games:
     lp: total.lp,
     placements,
     players: rows,
+    matchups: pickMatchups(buildMatchupTable(games).get(faction)),
   };
 }
 

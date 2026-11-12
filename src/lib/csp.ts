@@ -7,16 +7,11 @@
  *    separately, because the layout uses them for colours and sizes (an attribute can't run code).
  *  - Nothing can be framed, no plugins, forms only post back to this site.
  */
-export function buildCsp(nonce: string, options: { dev?: boolean; supabaseUrl?: string } = {}): string {
-  const { dev = false, supabaseUrl } = options;
+export function buildCsp(nonce: string, options: { dev?: boolean } = {}): string {
+  const { dev = false } = options;
+  // The browser only ever talks to this site: every database call is made by the server, so the database's own
+  // address is deliberately not listed here (a script that got in couldn't send data straight to it).
   const connect = ["'self'"];
-  if (supabaseUrl) {
-    try {
-      connect.push(new URL(supabaseUrl).origin);
-    } catch {
-      // A malformed URL just means no extra origin is allowed.
-    }
-  }
   // The dev server pushes hot-reload updates over a websocket.
   if (dev) connect.push("ws://localhost:*", "http://localhost:*");
 

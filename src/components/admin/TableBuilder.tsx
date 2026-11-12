@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import Image from "@/components/DeferredImage";
 import { ExternalLink, GripVertical, Search, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { NamePicker } from "@/components/NamePicker";
 import { ordinal } from "@/lib/format";
-import { FACTIONS, PLACEMENTS, type Player } from "@/lib/league";
+import { FACTIONS, PLACEMENTS, getFaction, type FactionId, type Player } from "@/lib/league";
 import { searchNames } from "@/lib/name-search";
 
 export interface Seat {
@@ -26,11 +27,13 @@ interface Props {
 
 const PLAYER_DRAG = "application/x-root-player";
 const SEAT_DRAG = "application/x-root-seat";
+const FACTION_DRAG = "application/x-root-faction";
+const FACTION_SEAT_DRAG = "application/x-root-faction-seat";
 
 /**
- * Builds a table: a searchable roster of player profiles on one side, the places (1st, 2nd…) on the other.
- * Drag a profile onto a place, drag a seated player to another place to swap, or just tap a name to seat them in the
- * next free place (touch screens don't drag). Each place also has its own name search.
+ * Builds a table: a searchable roster of player profiles and a tray of faction icons, dropped onto the places
+ * (1st, 2nd…). Drag a profile or an icon onto a place, drag a seated player (or faction) to another place to swap,
+ * or just tap one to give it to the next free place (touch screens don't drag). Each place also has its own name search.
  */
 export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporterId, compact = false }: Props) {
   const [query, setQuery] = useState("");
@@ -38,7 +41,7 @@ export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporte
 
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const seatOf = (id: string) => seats.findIndex((s, i) => i < tableSize && s.playerId === id);
-  const takenFactions = new Set(seats.slice(0, tableSize).map((s) => s.faction).filter(Boolean));
+  const factionSeatOf = (id: string) => seats.findIndex((s, i) => i < tableSize && s.faction === id);
 
   const roster = useMemo(
     () => searchNames(players.map((p) => ({ id: p.id, name: p.name })), query).map((o) => byId.get(o.id)!),
@@ -46,10 +49,11 @@ export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporte
   );
 
   const set = (next: Seat[]) => onSeatsChange(next);
+  const copy = () => seats.map((s) => ({ ...s }));
 
   /** Put a player in a place; if they were already seated elsewhere, that place is left empty. */
   const place = (index: number, playerId: string) => {
-    const next = seats.map((s) => ({ ...s }));
+    const next = copy();
     const from = seatOf(playerId);
     if (from >= 0 && from !== index) next[from].playerId = "";
     next[index].playerId = playerId;
@@ -60,8 +64,8 @@ export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporte
 
   const swap = (a: number, b: number) => {
     if (a === b) return;
-    const next = seats.map((s) => ({ ...s }));
-    [next[a], next[b]] = [next[b], next[a]];
+    const next = copy();
+    [next[a].playerId, next[b].playerId] = [next[b].playerId, next[a].playerId];
     set(next);
   };
 
@@ -72,16 +76,43 @@ export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporte
     if (free >= 0) place(free, playerId);
   };
 
+  /** Give a place a faction; if another place had it, that one is left without. */
+  const setFaction = (index: number, faction: string) => {
+    const next = copy();
+    const from = factionSeatOf(faction);
+    if (faction && from >= 0 && from !== index) next[from].faction = "";
+    next[index].faction = faction;
+    set(next);
+  };
+
+  const swapFactions = (a: number, b: number) => {
+    if (a === b) return;
+    const next = copy();
+    [next[a].faction, next[b].faction] = [next[b].faction, next[a].faction];
+    set(next);
+  };
+
+  /** Tap a faction: the first place that has none yet. */
+  const factionNext = (faction: string) => {
+    if (factionSeatOf(faction) >= 0) return;
+    const free = seats.findIndex((s, i) => i < tableSize && !s.faction);
+    if (free >= 0) setFaction(free, faction);
+  };
+
   const onDrop = (e: DragEvent, index: number) => {
     e.preventDefault();
     setOver(null);
     const playerId = e.dataTransfer.getData(PLAYER_DRAG);
     const fromSeat = e.dataTransfer.getData(SEAT_DRAG);
+    const faction = e.dataTransfer.getData(FACTION_DRAG);
+    const fromFactionSeat = e.dataTransfer.getData(FACTION_SEAT_DRAG);
     if (playerId && byId.has(playerId)) place(index, playerId);
     else if (fromSeat !== "") swap(Number(fromSeat), index);
+    else if (faction && FACTIONS.some((f) => f.id === faction)) setFaction(index, faction);
+    else if (fromFactionSeat !== "") swapFactions(Number(fromFactionSeat), index);
   };
 
-  const full = seats.slice(0, tableSize).every((s) => s.playerId);
+  const full = seats.slice(0, tableSize).every((s) => s.playerId && s.faction);
 
   return (
     <div className={`grid gap-4 ${compact ? "md:grid-cols-[13rem_minmax(0,1fr)]" : "lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]"}`}>
@@ -212,25 +243,126 @@ export function TableBuilder({ players, seats, tableSize, onSeatsChange, reporte
                 />
               )}
 
-              <select
-                name={`faction-${i}`}
-                aria-label={`${ordinal(placement)} place faction`}
-                className="field col-span-2 sm:col-span-1"
-                value={seat.faction}
-                onChange={(e) => set(seats.map((s, idx) => (idx === i ? { ...s, faction: e.target.value } : s)))}
-                required
-              >
-                <option value="">Faction…</option>
-                {FACTIONS.map((f) => (
-                  <option key={f.id} value={f.id} disabled={takenFactions.has(f.id) && seat.faction !== f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
+              <FactionSlot index={i} placement={placement} faction={seat.faction} compact={compact} onClear={() => setFaction(i, "")} />
             </div>
           );
         })}
       </fieldset>
+
+      {/* Faction tray */}
+      <section aria-label="Factions" className="space-y-2 rounded-2xl bg-parchment/60 p-3 col-span-full">
+        <p className="text-sm font-bold">
+          Factions <span className="font-semibold text-bark-soft">· drag one onto a place, or tap it to give it to the next place without one</span>
+        </p>
+        <ul className={`grid gap-1.5 ${compact ? "grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(5.25rem,1fr))]"}`}>
+          {FACTIONS.map((f) => {
+            const at = factionSeatOf(f.id);
+            return (
+              <li key={f.id}>
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData(FACTION_DRAG, f.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onClick={() => factionNext(f.id)}
+                  aria-label={at >= 0 ? `${f.name}, ${ordinal(at + 1)} place` : `Give ${f.name} to the next place without a faction`}
+                  title={f.name}
+                  className={`flex w-full cursor-grab flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:cursor-grabbing ${
+                    at >= 0 ? "border-moss/40 bg-moss/10" : "border-bark/15 bg-paper hover:border-moss"
+                  }`}
+                >
+                  <span className="relative">
+                    <FactionIcon faction={f.id} size={compact ? 36 : 44} />
+                    {at >= 0 && (
+                      <span className="absolute -top-1 -right-2 rounded-full bg-moss px-1.5 text-[0.7rem] leading-4 font-bold text-white">
+                        {ordinal(at + 1)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="w-full truncate text-center text-[0.72rem] leading-tight font-semibold">{f.name.split(" ")[0]}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/** A faction's icon in a ring of its colour. */
+function FactionIcon({ faction, size }: { faction: FactionId; size: number }) {
+  const f = getFaction(faction);
+  return (
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-paper"
+      style={{ width: size, height: size, border: `2.5px solid ${f.color}` }}
+    >
+      <Image src={f.icon} alt="" width={size} height={size} className="h-full w-full object-contain p-[8%]" />
+    </span>
+  );
+}
+
+/** A place's faction: the chosen icon (draggable to swap with another place), or a drop target waiting for one. */
+function FactionSlot({
+  index,
+  placement,
+  faction,
+  compact,
+  onClear,
+}: {
+  index: number;
+  placement: number;
+  faction: string;
+  compact: boolean;
+  onClear: () => void;
+}) {
+  const checkRef = useRef<HTMLInputElement>(null);
+  const chosen = FACTIONS.find((f) => f.id === faction);
+
+  // Native form validation: submitting without a faction points at this place.
+  useEffect(() => {
+    checkRef.current?.setCustomValidity(chosen ? "" : "Choose a faction for this place.");
+  }, [chosen]);
+
+  return (
+    <div className="relative col-span-2 sm:col-span-1">
+      <input type="hidden" name={`faction-${index}`} value={faction} />
+      {/* Carries the "required" check, which a hidden input can't. */}
+      <input
+        ref={checkRef}
+        tabIndex={-1}
+        aria-hidden="true"
+        required
+        readOnly
+        value={faction}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+      />
+      {chosen ? (
+        <div
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData(FACTION_SEAT_DRAG, String(index));
+            e.dataTransfer.effectAllowed = "move";
+          }}
+          className="flex min-w-0 cursor-grab items-center gap-2 rounded-xl bg-parchment/70 px-2 py-1 active:cursor-grabbing"
+        >
+          <FactionIcon faction={chosen.id} size={compact ? 30 : 38} />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold">{chosen.name}</span>
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={`Take ${chosen.name} off ${ordinal(placement)} place`}
+            className="shrink-0 rounded-full p-1 text-bark-soft hover:bg-bark/10"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <p className="rounded-xl border-2 border-dashed border-bark/30 px-3 py-2.5 text-sm text-bark-soft">Drop a faction here</p>
+      )}
     </div>
   );
 }

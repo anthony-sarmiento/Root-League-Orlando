@@ -63,14 +63,16 @@ describe("isUuid", () => {
 
 describe("buildCsp", () => {
   it("allows scripts only with the nonce, and forbids framing and plugins", () => {
-    const csp = buildCsp("abc123", { supabaseUrl: "https://example.supabase.co" });
+    const csp = buildCsp("abc123");
     expect(csp).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
     expect(csp).not.toMatch(/script-src[^;]*unsafe-eval/);
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("form-action 'self'");
-    expect(csp).toContain("connect-src 'self' https://example.supabase.co");
+    expect(csp).toMatch(/connect-src 'self'(;|$)/);
+    expect(csp).toContain("img-src 'self' blob: data:");
+    expect(csp).toContain("font-src 'self'");
     expect(csp).toContain("upgrade-insecure-requests");
   });
 
@@ -80,7 +82,8 @@ describe("buildCsp", () => {
     expect(csp).not.toContain("upgrade-insecure-requests");
   });
 
-  it("ignores a malformed Supabase URL", () => {
-    expect(buildCsp("n", { supabaseUrl: "not a url" })).toContain("connect-src 'self'");
+  it("only lets the browser talk to this site (the database is reached from the server)", () => {
+    expect(buildCsp("n")).not.toMatch(/supabase/);
+    expect(buildCsp("n")).toMatch(/connect-src 'self'(;|$)/);
   });
 });

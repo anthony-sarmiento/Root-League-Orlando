@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import { Avatar, avatarBackground } from "@/components/Avatar";
 import { AVATARS } from "@/lib/avatars.generated";
 import { FACTIONS, type AvatarCrop, type FactionId } from "@/lib/league";

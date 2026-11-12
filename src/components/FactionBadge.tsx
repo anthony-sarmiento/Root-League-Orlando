@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import { getFaction, type FactionId } from "@/lib/league";
 
 interface Props {

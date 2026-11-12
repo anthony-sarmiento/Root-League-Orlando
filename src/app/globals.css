@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
 /* Woodland palette: warm parchment, bark browns, moss and acorn accents. */
 @theme inline {
@@ -8,12 +9,12 @@
   --color-card: #e9d8ab; /* the darker parchment cards are made of */
   --color-gold: #c8982f;
   --color-bark: #4b3426;
-  --color-bark-soft: #6e503b;
+  --color-bark-soft: #664a36;
   --color-moss: #5f7d3b;
   --color-moss-deep: #3f5a27;
   --color-leaf: #9bb86a;
   --color-acorn: #c9772f;
-  --color-acorn-deep: #94500f; /* acorn for small text: 5:1 on paper */
+  --color-acorn-deep: #86480a; /* acorn for small text: 5:1 on the card colour */
   --color-honey: #e2b04a;
   --color-berry: #b5443a;
   --color-river: #3d8a8c;
@@ -482,7 +483,7 @@ textarea.field { min-height: 6rem; resize: vertical; }
 
 /* Keep the pattern calm behind full-width text on phones. */
 @media (max-width: 767px) {
-  .banner::before { opacity: 0.2; }
+  .banner::before { opacity: 0.2; background-image: var(--pattern-sm, var(--pattern)); background-size: 400px auto; }
 }
 
 /* ---------------------------------------------------------- Liveliness layer */
@@ -711,3 +712,11 @@ textarea.field { min-height: 6rem; resize: vertical; }
 
 /* Tables that fill a card edge to edge keep clear of the stitched border. */
 .card > .overflow-x-auto { padding: 0.5rem 0.75rem; }
+
+/* ----------------------------------------------------------- Deferred backgrounds */
+
+/* Decorative patterns behind cards, tiles and portraits are only requested once the page is ready (the page header's
+   own pattern isn't deferred, since it is what people see first). Until then those spots show their plain colour. */
+html:not(.ready) :is(.tile-bg, .pattern-strip, .trade-art, .pattern-fade, .avatar-bg) {
+  background-image: none !important;
+}

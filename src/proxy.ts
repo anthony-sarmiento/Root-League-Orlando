@@ -14,7 +14,7 @@ import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "@/lib/supabase/c
  */
 export async function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildCsp(nonce, { dev: process.env.NODE_ENV === "development", supabaseUrl });
+  const csp = buildCsp(nonce, { dev: process.env.NODE_ENV === "development" });
 
   // The nonce and policy go to Next.js as request headers so it can stamp its own scripts and styles.
   const requestHeaders = new Headers(request.headers);

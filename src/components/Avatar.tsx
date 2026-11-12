@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import { getFaction, type FactionId } from "@/lib/league";
 import type { AvatarCrop } from "@/lib/league";
 import { cropStyle, getAvatar } from "@/lib/profile";
@@ -28,7 +28,7 @@ export function avatarBackground(bg?: FactionId): { backgroundImage: string; bac
   const faction = getFaction(bg);
   return {
     // A soft light from above keeps the character readable on busy patterns.
-    backgroundImage: `radial-gradient(circle at 50% 30%, rgba(255,250,240,0.35), transparent 65%), url(${faction.pattern})`,
+    backgroundImage: `radial-gradient(circle at 50% 30%, rgba(255,250,240,0.35), transparent 65%), url(${faction.patternSm})`,
     backgroundSize: "auto, 260%",
     borderColor: faction.color,
   };
@@ -54,12 +54,12 @@ export function Avatar({ name, avatar, bg, crop, size = 44, className = "" }: Pr
     return (
       <span
         aria-hidden="true"
-        className={`relative inline-flex shrink-0 overflow-hidden rounded-full border-2 border-bark/25 ${className}`}
+        className={`relative inline-flex shrink-0 overflow-hidden rounded-full border-2 border-bark/25 ${bg ? "avatar-bg" : ""} ${className}`}
         style={style}
       >
         {/* The whole portrait, uncropped, unless the player has zoomed or moved it. */}
         <Image
-          src={art.src}
+          src={size <= 96 ? art.src.replace("/avatars/", "/avatars/sm/") : art.src}
           alt=""
           width={Math.max(size * 2, 128)}
           height={Math.max(size * 2, 128)}
@@ -73,7 +73,7 @@ export function Avatar({ name, avatar, bg, crop, size = 44, className = "" }: Pr
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full border-2 border-bark/25 font-display font-bold text-paper ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border-2 border-bark/25 font-display font-bold text-paper ${bg ? "avatar-bg" : ""} ${className}`}
       style={{
         width: size,
         height: size,

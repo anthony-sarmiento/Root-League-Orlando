@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/image"; // this page is served without scripts, so it can't use the deferred loader
 import Link from "next/link";
 
 /** Shown for any address that doesn't exist. It needs no scripts, so it works even where the page can't hydrate. */

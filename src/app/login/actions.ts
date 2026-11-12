@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { allowAttempt, clientAddress } from "@/lib/rate-limit";
 import { validatePassword } from "@/lib/password";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createServerSupabase } from "@/lib/supabase/server";
@@ -9,6 +11,8 @@ export interface AuthState {
   error?: string;
   notice?: string;
 }
+
+const TEN_MINUTES = 10 * 60 * 1000;
 
 /** Kept for the existing login form's type. */
 export type LoginState = AuthState;
@@ -23,6 +27,12 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Enter your email and password." };
+
+  // Slow down password guessing: a few tries per address and a few per account, per 10 minutes.
+  const address = clientAddress(await headers());
+  if (!allowAttempt(`signin:${address}`, 20, TEN_MINUTES) || !allowAttempt(`signin:${address}:${email.toLowerCase()}`, 8, TEN_MINUTES)) {
+    return { error: "Too many attempts. Wait a few minutes and try again." };
+  }
 
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -55,6 +65,11 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const passwordProblems = validatePassword(password, email);
   if (passwordProblems.length) return { error: passwordProblems[0] };
   if (password !== confirm) return { error: "Those passwords don't match." };
+
+  // Fake sign-ups from one address: a handful an hour is plenty for real people.
+  if (!allowAttempt(`signup:${clientAddress(await headers())}`, 6, 60 * 60 * 1000)) {
+    return { error: "Too many sign-ups right now. Wait a while and try again." };
+  }
 
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.auth.signUp({ email, password });

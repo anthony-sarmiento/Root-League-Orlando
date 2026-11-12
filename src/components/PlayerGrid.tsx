@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import Image from "next/image";
+import Image from "@/components/DeferredImage";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -29,6 +29,9 @@ export interface PlayerCardData {
   faction?: FactionId;
   factionIsFavorite: boolean;
 }
+
+/** How many cards a long roster shows before "Show everyone". */
+const FIRST_CARDS = 6;
 
 const SORTS = [
   { id: "lp", label: "Total LP", cmp: (a: PlayerCardData, b: PlayerCardData) => b.lp - a.lp },
@@ -60,13 +63,16 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
   }, [players, query, sort, faction]);
 
   const filtering = query.trim() !== "" || faction !== "all";
+  // A long roster starts with its first few cards; the rest are one tap away. (Searching or filtering shows every match.)
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll || filtering ? shown : shown.slice(0, FIRST_CARDS);
 
   return (
     <div className="space-y-8">
       {players.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <div className="flex items-center -space-x-3" aria-hidden="true">
-            {players.slice(0, 10).map((p) => (
+            {players.slice(0, 6).map((p) => (
               <span key={p.id} className="rounded-full ring-[3px] ring-parchment">
                 <Avatar name={p.name} avatar={p.avatar} bg={p.avatarBg} crop={p.avatarCrop} size={46} />
               </span>
@@ -136,12 +142,12 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
         </p>
       ) : (
         <ul className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((p, i) => {
+          {visible.map((p, i) => {
             const f = getFaction(p.faction ?? "alliance");
             const art = getAvatar(p.avatar);
             const bg = getFaction(p.avatarBg ?? p.faction ?? "alliance");
             const style = {
-              "--pattern": `url(${bg.pattern})`,
+              "--pattern": `url(${bg.patternSm})`,
               "--tint": f.color,
               "--lean": `${[-0.9, 0.7, -0.5, 0.9][i % 4]}deg`,
             } as CSSProperties;
@@ -209,6 +215,14 @@ export function PlayerGrid({ players }: { players: PlayerCardData[] }) {
             );
           })}
         </ul>
+      )}
+
+      {visible.length < shown.length && (
+        <div className="text-center">
+          <button type="button" className="btn secondary" onClick={() => setShowAll(true)}>
+            Show everyone ({shown.length - visible.length} more)
+          </button>
+        </div>
       )}
     </div>
   );

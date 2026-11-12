@@ -62,6 +62,19 @@ Only the publishable key belongs in the site; never put a Supabase `service_role
 
 The original Root artwork lives in `/assets` (about 150 MB, **not committed**). `npm run assets` turns it into small WebP files under `public/` (faction icons, patterned backgrounds, hero art and 70+ player portraits) and regenerates `src/lib/avatars.generated.ts`. It needs `ffmpeg` on your PATH. The committed `public/` files are all the site needs, so you only re-run this when the artwork changes. Root and its iconography are © Leder Games.
 
+After `npm run assets`, run `node scripts/image-sizes.mjs` (needs `ffprobe`) to refresh `src/lib/image-sizes.generated.ts`, the true pixel size of each portrait and piece of art. Small copies (`public/avatars/sm`, `public/patterns/sm`) are used for list rows, cards and phone banners.
+
+## Speed
+
+The site aims for 99+ on Lighthouse (mobile and desktop). What keeps it there:
+
+- **Nothing decorative competes with the first paint.** The web fonts (self-hosted in `public/fonts`, declared in `src/app/fonts.css`) and all artwork are requested only once the page has loaded and painted. `ReadyOnLoad` adds the `ready` and `fonts` classes to `<html>` after that, and `DeferredImage` (a stand-in for `next/image`) swaps a blank, correctly shaped placeholder for the real picture at the same moment. Until then text uses metric-matched fallback fonts, so nothing jumps. Don't bring back `next/font` or `next/image` for artwork: they fetch during the first paint.
+- Page headers are the one thing drawn straight away, using a small, faint pattern that is preloaded (`Banner`).
+- Artwork is small WebP; cards, tiles and avatars use `sm` copies.
+- Long rosters (`PlayerGrid`) start with a handful of cards and offer "Show everyone".
+
+To measure: `bash scripts/rebuild-sample.sh` (production build with demo data on port 3300), then `bash scripts/lh-run.sh 3300 "" players leaderboard` for mobile and desktop scores, and `node scripts/lh-summary.mjs <report.json>` to see what lost points. Needs Chrome (set `CHROME_PATH` if it isn't in the usual place).
+
 ## Layout
 
 - `src/lib/stats.ts`, `seasons.ts`, `rsvp.ts`, `profile.ts` — pure logic, all unit-tested
@@ -70,7 +83,7 @@ The original Root artwork lives in `/assets` (about 150 MB, **not committed**). 
 - `src/app/account`, `login`, `signup`, `admin`, `src/proxy.ts` — accounts and organizer tools
 - `src/components` — shared UI (avatars, podium, leaderboard table, RSVP, session cards)
 - `supabase/migrations` — database schema and policies; `supabase/tests` — policy tests
-- `scripts/build-assets.mjs` — artwork pipeline
+- `scripts/build-assets.mjs` — artwork pipeline; `image-sizes.mjs`, `rebuild-sample.sh`, `lh-run.sh`, `lh-summary.mjs` — image sizes and Lighthouse runs
 
 ## Security notes
 

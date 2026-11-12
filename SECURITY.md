@@ -16,13 +16,14 @@ An email address lives in one place: the login system (Supabase Auth). Everywher
 
 ## What the site enforces
 
-**In the database (the real gatekeeper).** Row-level security is on for every table. The public can read league data; players can only edit their own profile and RSVP as themselves; only organizers can write anything else. Reports, claims and account links are private to their owner and organizers. Sensitive operations (merging players, connecting accounts, approving reports, deleting an account) are database functions that check who is calling. Names, bios, avatar settings, rounds and table sizes have database `CHECK` rules, so bad data is refused even if the site had a bug. The test suite (`npm run test:db`) runs every rule against a real Postgres.
+**In the database (the real gatekeeper).** Row-level security is on for every table. The public can read league data; players can only edit their own profile and RSVP as themselves; only organizers can write anything else. Reports, claims and account links are private to their owner and organizers. Sensitive operations (merging players, connecting accounts, approving reports, deleting an account) are database functions that check who is calling, and only signed-in roles may run them (migration `0011` also took the "which names are linked?" helper away from signed-out visitors). Names, bios, avatar settings, rounds and table sizes have database `CHECK` rules, so bad data is refused even if the site had a bug. The test suite (`npm run test:db`) runs every rule against a real Postgres.
 
 **In the app.**
 
-- **Content-Security-Policy with a nonce** (`src/proxy.ts`, `src/lib/csp.ts`). Scripts only run if they carry a random, per-request nonce, so an attacker who injected markup still couldn't run code. Nothing can frame the site, no plugins, and forms only post back to the site.
-- **Other headers**: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (camera, microphone, location and more are off), `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`. The framework header is removed.
+- **Content-Security-Policy with a nonce** (`src/proxy.ts`, `src/lib/csp.ts`). Scripts only run if they carry a random, per-request nonce, so an attacker who injected markup still couldn't run code. Nothing can frame the site, no plugins, and forms only post back to the site. The browser may only connect back to the site itself (every database call is made by the server), and fonts and pictures are all served from the site, so a script that did get in would have nowhere to send data.
+- **Other headers**: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (camera, microphone, location and more are off), `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy: same-origin` (other sites can't embed the site's pictures or fonts) and `X-Permitted-Cross-Domain-Policies`. The framework header is removed.
 - **Session cookies** are `HttpOnly`, `SameSite=Lax` and `Secure`; there is no Supabase client in the browser at all, so page scripts can't read a login.
+- **Rate limiting**: sign-in is limited to 8 tries per account and 20 per address every 10 minutes, and sign-up to 6 per address an hour (`src/lib/rate-limit.ts`). Each server instance counts on its own, so this is a second line behind Supabase's limits (step 2 below), not a replacement for them.
 - **Passwords**: at least 10 characters, refuse the most common passwords, repeats, key runs and anything containing the email name. A hidden honeypot field stops simple sign-up bots.
 - **Input**: one validator for player names (letters, numbers, spaces and `. ' _ -`), cleaned bios, ids from forms must be real UUIDs, and the database is only ever queried with bound parameters (no SQL is built from text).
 - **Server actions** re-check who is asking every time; the redirects in the proxy are only a convenience.
@@ -46,7 +47,8 @@ These are dashboard settings, not code:
 
 - The site has no password-reset flow yet (people who forget a password need an organizer or a new account). Adding one needs email sending, so it should come together with step 1 above.
 - A page that doesn't exist (a 404) is served without the script nonce, so it loads as plain HTML with no scripts. It still shows and its links work.
-- There's no per-request rate limiting inside the site itself; that is Supabase's and Vercel's job (steps 2 and 7).
+- Rate limiting inside the site is best-effort (each server instance counts separately). Supabase's limits and Vercel's firewall (steps 2 and 7) are the real backstop.
+- **Last scan** (November 2026): dependencies (`npm audit --omit=dev`: 0 findings), secrets in the repository and its history (none; only the publishable key is used, and `.env.local` is git-ignored), every server action's caller check, every database function's guard and grants, injection sinks (no `dangerouslySetInnerHTML`, `eval` or built SQL), redirects (fixed paths only, no open redirects), and the response headers of a production build.
 
 ## Reporting a problem
 
