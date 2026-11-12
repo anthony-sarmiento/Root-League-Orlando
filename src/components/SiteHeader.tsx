@@ -32,7 +32,7 @@ export async function SiteHeader() {
         </div>
 
         <div className="order-3 w-full md:order-2 md:ml-auto md:w-auto">
-          <SiteNav />
+          <SiteNav isAdmin={viewer?.isAdmin === true} />
         </div>
       </div>
     </header>

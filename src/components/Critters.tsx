@@ -24,90 +24,107 @@ export function Embers({ count = 18 }: { count?: number }) {
   );
 }
 
-interface Fighter {
+interface Figure {
   id: string;
-  /** Horizontal centre, percent of the stage. */
+  /** Left edge and width of the character's box in the 2400-wide artwork. */
   x: number;
-  /** Distance from the stage floor, px. */
-  b: number;
-  /** Width, px. */
   w: number;
+  /** Top of the box; characters stand on the bottom of it. */
+  y: number;
   /** -1 turns the character to face left. */
   f?: 1 | -1;
   /** Tilt in degrees. */
   r?: number;
-  z?: number;
-  /** Seconds for one scuffle swing, and a start offset. */
-  d?: number;
-  delay?: number;
-  /** Skipped on phones. */
-  desktopOnly?: boolean;
 }
 
-// Two warbands collide in the middle. Left side charges right, right side charges left; a few leap in from above.
-const FIGHTERS: Fighter[] = [
-  { id: "commander-vauquelin", x: 13, b: 0, w: 210, f: 1, r: -3, z: 4, d: 2.1 },
-  { id: "camdyn", x: 32, b: 6, w: 190, f: 1, r: 4, z: 6, d: 1.8, delay: -0.6 },
-  { id: "captain-ismay", x: 24, b: 120, w: 170, f: 1, r: 14, z: 5, d: 2.6, delay: -1, desktopOnly: true },
-  { id: "sergeant-atheldrydd", x: 7, b: 40, w: 150, f: 1, r: -8, z: 3, d: 2.3, desktopOnly: true },
-  { id: "duke-whitetalon", x: 87, b: 0, w: 230, f: -1, r: 3, z: 4, d: 2, delay: -0.3 },
-  { id: "captain-hersilia", x: 67, b: 6, w: 200, f: 1, r: -4, z: 6, d: 1.9, delay: -0.9 },
-  { id: "odilie", x: 94, b: 150, w: 150, f: 1, r: -12, z: 3, d: 2.7, delay: -0.2, desktopOnly: true },
-  { id: "ubade-mo-set", x: 77, b: 130, w: 160, f: 1, r: -10, z: 5, d: 2.4, delay: -1.4, desktopOnly: true },
-  { id: "arbiter", x: 59, b: 170, w: 150, f: -1, r: -16, z: 7, d: 2.2, delay: -0.5, desktopOnly: true },
-  { id: "thief", x: 47, b: 210, w: 140, f: 1, r: 18, z: 8, d: 1.7, delay: -1.1, desktopOnly: true },
+const GROUND = 760;
+const BOX = 560; // every character is drawn in a box this tall, standing on its bottom edge
+
+// Two warbands collide in the middle of the page-wide picture. The left side charges right, the right side
+// charges left, and a few leap in from above. Back-to-front.
+const FIGURES: Figure[] = [
+  { id: "odilie", x: 2020, w: 420, y: 70, f: 1, r: -12 },
+  { id: "ubade-mo-set", x: 1600, w: 400, y: 40, f: 1, r: -10 },
+  { id: "sergeant-atheldrydd", x: 20, w: 420, y: GROUND - 440, f: 1, r: -6 },
+  { id: "captain-ismay", x: 520, w: 420, y: 70, f: 1, r: 14 },
+  { id: "commander-vauquelin", x: 250, w: 560, y: GROUND - BOX, f: 1, r: -3 },
+  { id: "captain-hersilia", x: 1420, w: 500, y: GROUND - BOX + 30, f: 1, r: -4 },
+  { id: "duke-whitetalon", x: 1840, w: 600, y: GROUND - BOX - 40, f: -1, r: 3 },
+  { id: "camdyn", x: 700, w: 500, y: GROUND - BOX + 10, f: 1, r: 4 },
+  { id: "thief", x: 1000, w: 380, y: 10, f: 1, r: 18 },
+  { id: "arbiter", x: 1180, w: 400, y: 30, f: -1, r: -14 },
 ];
 
-/** A cartoon brawl: critters from every corner of the woodland piling into one another around a dust-up. */
-export function BrawlScene() {
+/** A page-wide piece of art: critters from every corner of the woodland piling into one big fight. */
+export function Panorama() {
   return (
-    <div className="brawl" aria-hidden="true">
-      {/* dust and a starburst where they meet */}
+    <svg className="panorama" viewBox={`0 0 2400 ${GROUND + 110}`} role="img" aria-label="Woodland critters from every faction crashing into a big brawl">
+      <defs>
+        <radialGradient id="dust" cx="40%" cy="35%" r="65%">
+          <stop offset="0" stopColor="#fff4de" stopOpacity="0.95" />
+          <stop offset="0.55" stopColor="#d6be96" stopOpacity="0.6" />
+          <stop offset="1" stopColor="#d6be96" stopOpacity="0" />
+        </radialGradient>
+        <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+          <feDropShadow dx="0" dy="14" stdDeviation="10" floodColor="#000" floodOpacity="0.5" />
+        </filter>
+      </defs>
+
+      {/* dust along the ground where they collide */}
       {[
-        { l: "44%", b: "4%", s: 150, d: "0s" },
-        { l: "52%", b: "10%", s: 190, d: "-0.5s" },
-        { l: "36%", b: "2%", s: 120, d: "-1s" },
-        { l: "60%", b: "3%", s: 130, d: "-0.3s" },
-      ].map((p, i) => (
-        <span key={i} className="puff" style={{ left: p.l, bottom: p.b, width: p.s, height: p.s * 0.8, "--delay": p.d } as CSSProperties} />
+        [1040, 720, 210],
+        [1200, 700, 260],
+        [1370, 724, 200],
+        [820, 735, 150],
+        [1560, 735, 150],
+      ].map(([cx, cy, r]) => (
+        <ellipse key={cx} cx={cx} cy={cy} rx={r} ry={r * 0.55} fill="url(#dust)" filter="url(#soft)" />
       ))}
-      <svg className="clash" viewBox="0 0 200 200">
+
+      {/* the clash */}
+      <g transform="translate(1200 330) scale(1.12)">
         <polygon
-          points="100,6 118,62 172,30 142,84 196,100 142,116 172,170 118,138 100,194 82,138 28,170 58,116 4,100 58,84 28,30 82,62"
+          points="0,-300 56,-120 214,-216 130,-52 290,0 130,52 214,216 56,120 0,300 -56,120 -214,216 -130,52 -290,0 -130,-52 -214,-216 -56,-120"
           fill="#f2c868"
           stroke="#3a1a14"
-          strokeWidth="6"
+          strokeWidth="14"
           strokeLinejoin="round"
         />
         <polygon
-          points="100,40 112,76 148,58 130,92 160,100 130,108 148,142 112,124 100,160 88,124 52,142 70,108 40,100 70,92 52,58 88,76"
+          points="0,-170 34,-68 124,-124 76,-30 170,0 76,30 124,124 34,68 0,170 -34,68 -124,124 -76,30 -170,0 -76,-30 -124,-124 -34,-68"
           fill="#fff6dc"
-          opacity="0.9"
+          opacity="0.92"
         />
-      </svg>
-      {FIGHTERS.map((f) => (
-        <span
-          key={f.id}
-          className={`fighter ${f.desktopOnly ? "desktop-only" : ""}`}
-          style={
-            {
-              "--x": `${f.x}%`,
-              "--b": `${f.b}px`,
-              "--w": `${f.w}px`,
-              "--f": f.f ?? 1,
-              "--r": `${f.r ?? 0}deg`,
-              "--z": f.z ?? 1,
-              "--d": `${f.d ?? 2.4}s`,
-              "--delay": `${f.delay ?? 0}s`,
-            } as CSSProperties
-          }
-        >
-          <span>
-            <Image src={critterSrc(f.id)} alt="" width={320} height={320} className="h-auto w-full" />
-          </span>
-        </span>
+      </g>
+
+      {FIGURES.map((f) => {
+        const cx = f.x + f.w / 2;
+        const cy = f.y + BOX;
+        const flip = f.f === -1 ? `translate(${cx * 2} 0) scale(-1 1) ` : "";
+        return (
+          <g key={f.id} filter="url(#shadow)" transform={`${flip}rotate(${f.r ?? 0} ${cx} ${cy})`}>
+            <image
+              href={critterSrc(f.id)}
+              x={f.x}
+              y={f.y}
+              width={f.w}
+              height={BOX}
+              preserveAspectRatio="xMidYMax meet"
+            />
+          </g>
+        );
+      })}
+
+      {/* sparks */}
+      {[
+        [980, 250, 7], [1420, 210, 9], [1130, 120, 6], [1290, 150, 8], [900, 420, 6], [1560, 380, 7], [1210, 560, 6],
+      ].map(([cx, cy, r]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#ffe3a3" opacity="0.9" />
       ))}
-    </div>
+    </svg>
   );
 }
 

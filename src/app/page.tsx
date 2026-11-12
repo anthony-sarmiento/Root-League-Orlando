@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Crown, Trophy } from "lucide-react";
 import { Banner } from "@/components/Banner";
-import { BrawlScene, Embers, Perch } from "@/components/Critters";
+import { Embers, Panorama, Perch } from "@/components/Critters";
 import { FactionBadge } from "@/components/FactionBadge";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { LpScale } from "@/components/LpScale";
@@ -114,8 +114,6 @@ export default async function Home() {
 
       {/* Standings */}
       <section className="card relative p-5 sm:p-8">
-        <Perch id="camdyn" w={104} right="3rem" />
-        <Perch id="beth" w={84} right="9.5rem" flip />
         <SectionHeading
           title={
             <span className="flex items-center gap-3">
@@ -210,8 +208,8 @@ export default async function Home() {
             <Link href="/factions" className="btn secondary">Pick a faction</Link>
           </div>
         </div>
-        <div className="mt-6">
-          <BrawlScene />
+        <div className="bleed mt-8">
+          <Panorama />
         </div>
       </section>
 
@@ -227,7 +225,7 @@ export default async function Home() {
             </Link>
           }
         />
-        <ul className="tilt-tiles grid grid-cols-2 gap-x-3 gap-y-16 pt-10 sm:gap-x-4 md:grid-cols-3 lg:grid-cols-5">
+        <ul className="tilt-tiles grid grid-cols-2 gap-x-3 gap-y-20 pt-12 sm:gap-x-4 md:grid-cols-3 lg:grid-cols-5">
           {FACTIONS.map((f, i) => {
             const stat = factionStats.get(f.id);
             const style = { "--pattern": `url(${f.pattern})`, "--tint": f.color } as CSSProperties;
@@ -236,7 +234,7 @@ export default async function Home() {
                 <Link href="/factions" className="faction-tile h-full" style={style}>
                   <span className="tile-bg" aria-hidden="true" />
                   <span className="tile-critter" style={{ "--r": `${[-7, 6, -4, 8, -6][i % 5]}deg` } as CSSProperties} aria-hidden="true">
-                    <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={320} height={320} className="h-auto w-full" />
+                    <Image src={critterSrc(FACTION_CRITTER[f.id])} alt="" width={320} height={320} className="h-32 w-auto" />
                   </span>
                   <span className="faction-icon inline-flex w-fit"><FactionBadge faction={f.id} size={56} /></span>
                   <span className="mt-3 font-display text-lg leading-tight font-bold">{f.name}</span>

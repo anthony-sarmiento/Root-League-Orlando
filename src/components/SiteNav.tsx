@@ -11,13 +11,13 @@ const LINKS = [
   { href: "/factions", label: "Factions" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <nav aria-label="Main" className="nav-scroll flex gap-1">
-      {LINKS.map((l) => (
+      {(isAdmin ? [...LINKS, { href: "/admin", label: "Organizer" }] : LINKS).map((l) => (
         <Link key={l.href} href={l.href} className="nav-link" aria-current={isActive(l.href) ? "page" : undefined}>
           {l.label}
         </Link>

@@ -24,6 +24,9 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
+        <Link href="/admin" className="draw-link text-sm font-bold">
+          Organizer login
+        </Link>
         <p className="max-w-prose text-sm text-parchment/75">
           Root and its iconography are © Leder Games. A fan-run league in Orlando.
         </p>

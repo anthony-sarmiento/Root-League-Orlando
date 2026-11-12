@@ -5,6 +5,8 @@
   --color-parchment: #f7efdc;
   --color-parchment-deep: #eddcb8;
   --color-paper: #fffaf0;
+  --color-card: #e9d8ab; /* the darker parchment cards are made of */
+  --color-gold: #c8982f;
   --color-bark: #4b3426;
   --color-bark-soft: #6e503b;
   --color-moss: #5f7d3b;
@@ -85,17 +87,17 @@ p { text-wrap: pretty; }
 .card {
   position: relative;
   color: var(--color-bark);
-  background: var(--color-paper);
-  border: 1.5px solid rgba(75, 52, 38, 0.16);
+  background: var(--color-card);
+  border: 2px solid rgba(75, 52, 38, 0.55);
   border-radius: 1.25rem;
   box-shadow: var(--shadow-card);
 }
-/* The stitched inner border is the site's signature; use it on one or two surfaces per page. */
-.card.stitched::after {
+/* The stitched gold inner border is the cards' signature. */
+.card::after {
   content: "";
   position: absolute;
   inset: 6px;
-  border: 2px dashed rgba(75, 52, 38, 0.14);
+  border: 2px dashed rgba(200, 152, 47, 0.9);
   border-radius: 0.9rem;
   pointer-events: none;
 }
@@ -406,16 +408,21 @@ textarea.field { min-height: 6rem; resize: vertical; }
 }
 .tile-critter {
   position: absolute;
-  right: 0.5rem;
-  bottom: 38%;
+  right: 0.75rem;
+  top: 2.5rem;
   z-index: -1;
-  width: 6.75rem;
+  display: flex;
+  height: 8rem;
+  align-items: flex-end;
+  justify-content: flex-end;
   pointer-events: none;
-  transform: translateY(52%) rotate(var(--r, 0deg)) scale(0.9);
+  transform: rotate(var(--r, 0deg));
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+/* Every critter is the same height and travels the same distance, so each one clears the box by the same amount. */
+.tile-critter img { height: 8rem; width: auto; max-width: none; }
 .faction-tile:hover .tile-critter, .faction-tile:focus-visible .tile-critter {
-  transform: translateY(-27%) rotate(var(--r, 0deg)) scale(1.06);
+  transform: translateY(-7rem) rotate(var(--r, 0deg));
 }
 .faction-tile .faction-icon { transition: transform 0.35s var(--ease-out); }
 .faction-tile:hover .faction-icon { transform: scale(1.12) rotate(-6deg); }
@@ -553,39 +560,13 @@ textarea.field { min-height: 6rem; resize: vertical; }
   animation: ember-rise var(--d) linear var(--delay) infinite;
 }
 
-/* The brawl: critters from both sides piling into one another around a clash of dust and stars. */
-@keyframes scuffle {
-  from { transform: translate(-7px, 2px) rotate(-3deg); }
-  to { transform: translate(9px, -16px) rotate(4deg); }
-}
-@keyframes clash { from { transform: scale(0.94) rotate(-4deg); } to { transform: scale(1.1) rotate(5deg); } }
-@keyframes puff { from { transform: scale(0.9); opacity: 0.55; } to { transform: scale(1.12); opacity: 0.85; } }
-.brawl { position: relative; height: 25rem; }
-@media (min-width: 768px) { .brawl { height: 33rem; } }
-.fighter {
-  position: absolute;
-  left: var(--x);
-  bottom: var(--b);
-  width: var(--w);
-  z-index: var(--z, 1);
-  transform: translateX(-50%) scaleX(var(--f, 1)) rotate(var(--r, 0deg));
-  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.5));
-}
-.fighter > span { display: block; transform-origin: 50% 90%; animation: scuffle var(--d, 2.4s) ease-in-out var(--delay, 0s) infinite alternate; }
-.fighter img { display: block; width: 100%; height: auto; }
-.clash { position: absolute; left: 50%; bottom: 22%; width: min(22rem, 60%); z-index: 2; margin-left: calc(min(22rem, 60%) / -2); animation: clash 0.9s ease-in-out infinite alternate; }
-.puff {
-  position: absolute;
-  z-index: 0;
-  border-radius: 999px;
-  background: radial-gradient(circle at 40% 35%, rgba(255, 244, 222, 0.9), rgba(214, 190, 150, 0.55) 55%, rgba(214, 190, 150, 0) 72%);
-  filter: blur(3px);
-  animation: puff 1.6s ease-in-out var(--delay, 0s) infinite alternate;
-}
-@media (max-width: 767px) {
-  .fighter.desktop-only { display: none; }
-  .fighter { width: calc(var(--w) * 0.66); }
-  .brawl { height: 21rem; }
+/* One wide piece of art, drawn as a single static SVG so it scales as a unit; its ends melt into the page. */
+.panorama {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
 }
 
 /* A critter perched on the top edge of a card, watching the page. */
@@ -609,7 +590,7 @@ textarea.field { min-height: 6rem; resize: vertical; }
   overflow: hidden;
   border-radius: 1.5rem;
   border: 3px solid var(--tint, var(--color-bark));
-  background: var(--color-paper);
+  background: var(--color-card);
   box-shadow: var(--shadow-card);
   rotate: var(--lean, 0deg);
   transition: transform 0.3s var(--ease-out), rotate 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
@@ -664,10 +645,12 @@ textarea.field { min-height: 6rem; resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   .ember { display: none; }
   .trade-card, .trade-card:hover, .trade-card .portrait, .tilt-tiles .faction-tile, .tile-critter, .crew > span { transition: none; }
-  .fighter > span, .clash, .puff { animation: none; }
   .trade-card::after { display: none; }
   .trade-card:hover .portrait { transform: none; }
 }
 
 /* Embers inside a glow section drift across the whole width of the page. */
 .glow > .embers { left: 50%; right: auto; width: 100vw; transform: translateX(-50%); }
+
+/* Tables that fill a card edge to edge keep clear of the stitched border. */
+.card > .overflow-x-auto { padding: 0.5rem 0.75rem; }
