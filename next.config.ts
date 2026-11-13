@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
         source: `/${dir}/:path*`,
         headers: staticAssetHeaders,
       })),
-      ...["/admin", "/account", "/report", "/login", "/signup"].map((base) => ({
+      ...["/admin", "/account", "/report", "/login", "/signup", "/auth"].map((base) => ({
         source: `${base}/:path*`,
         headers: privateHeaders,
       })),

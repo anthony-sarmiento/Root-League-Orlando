@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { captchaEnabled } from "@/lib/captcha";
 import { buildCsp } from "@/lib/csp";
 import { hardenCookie } from "@/lib/supabase/cookies";
 import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "@/lib/supabase/config";
@@ -14,7 +15,7 @@ import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "@/lib/supabase/c
  */
 export async function proxy(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
-  const csp = buildCsp(nonce, { dev: process.env.NODE_ENV === "development" });
+  const csp = buildCsp(nonce, { dev: process.env.NODE_ENV === "development", captcha: captchaEnabled });
 
   // The nonce and policy go to Next.js as request headers so it can stamp its own scripts and styles.
   const requestHeaders = new Headers(request.headers);

@@ -2,7 +2,9 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { captchaEnabled, captchaTokenFrom } from "@/lib/captcha";
 import { allowAttempt, clientAddress } from "@/lib/rate-limit";
+import { siteOrigin } from "@/lib/site-url";
 import { validatePassword } from "@/lib/password";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createServerSupabase } from "@/lib/supabase/server";
@@ -13,6 +15,9 @@ export interface AuthState {
 }
 
 const TEN_MINUTES = 10 * 60 * 1000;
+
+const CAPTCHA_NEEDED = "Please complete the check above first.";
+const CAPTCHA_FAILED = "The check didn't go through. Please try it again.";
 
 /** Kept for the existing login form's type. */
 export type LoginState = AuthState;
@@ -34,11 +39,19 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: "Too many attempts. Wait a few minutes and try again." };
   }
 
+  const captchaToken = captchaTokenFrom(formData);
+  if (captchaEnabled && !captchaToken) return { error: CAPTCHA_NEEDED };
+
   const supabase = await createServerSupabase();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  });
   if (error) {
     // Log only the error code, never the email or password.
     console.error("[sign-in] failed:", error.code ?? error.name, error.status);
+    if (error.code === "captcha_failed") return { error: CAPTCHA_FAILED };
     if (error.code === "email_not_confirmed") {
       return { error: "That account's email hasn't been confirmed yet. Check your inbox for the confirmation link." };
     }
@@ -71,14 +84,18 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: "Too many sign-ups right now. Wait a while and try again." };
   }
 
+  const captchaToken = captchaTokenFrom(formData);
+  if (captchaEnabled && !captchaToken) return { error: CAPTCHA_NEEDED };
+
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password, options: captchaToken ? { captchaToken } : undefined });
   if (error) {
     // Log only the error code, never the email or password.
     console.error("[sign-up] failed:", error.code ?? error.name, error.status);
     if (error.code === "over_email_send_rate_limit" || error.status === 429) {
       return { error: "Too many sign-ups right now. Wait a few minutes and try again." };
     }
+    if (error.code === "captcha_failed") return { error: CAPTCHA_FAILED };
     if (error.code === "weak_password") return { error: "That password is too easy to guess. Try a longer one." };
     return { error: COULDNT_CREATE };
   }
@@ -90,6 +107,27 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   // With email confirmation off there's a session straight away; with it on, they need to confirm first.
   if (data.session) redirect("/account");
   return { notice: "Almost there! If that address can be used, we've sent a confirmation link. Click it, then sign in." };
+}
+
+/**
+ * Starts "Continue with Google": asks Supabase for Google's sign-in address and sends the visitor there. Google
+ * then returns them to /auth/callback. (No CAPTCHA here: Google has already checked they are a real person.)
+ */
+export async function signInWithGoogle(): Promise<void> {
+  if (!isSupabaseConfigured) redirect("/login");
+  const requestHeaders = await headers();
+  if (!allowAttempt(`oauth:${clientAddress(requestHeaders)}`, 20, TEN_MINUTES)) redirect("/login?error=rate");
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${siteOrigin(requestHeaders)}/auth/callback` },
+  });
+  if (error || !data.url) {
+    console.error("[google-sign-in] failed:", error?.code ?? error?.name, error?.status);
+    redirect("/login?error=oauth");
+  }
+  redirect(data.url);
 }
 
 export async function signOut() {

@@ -91,4 +91,4 @@ See [`SECURITY.md`](SECURITY.md) for how emails and accounts are protected, what
 
 - The site only talks to the database through bound parameters (Supabase's client and `rpc` calls), never by building SQL strings, so names can't inject SQL.
 - Player names go through one validator (`src/lib/player-name.ts`) everywhere: letters, numbers, spaces and `. ' _ -`, 40 characters at most, invisible characters removed. Migration `0006_name_safety.sql` repeats the rule inside the database (no markup, quotes, statement punctuation, control or invisible characters; one name per player ignoring capitals).
-- Under *Authentication* in the Supabase dashboard, review the rate limits for sign-ups and sign-ins and consider turning on CAPTCHA protection, since sign-up is open to anyone.
+- Sign-in and sign-up have a CAPTCHA (Cloudflare Turnstile) and "Continue with Google" built in. Both are off until configured: follow [`docs/CAPTCHA-AND-GOOGLE.md`](docs/CAPTCHA-AND-GOOGLE.md).

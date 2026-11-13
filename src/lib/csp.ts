@@ -7,8 +7,8 @@
  *    separately, because the layout uses them for colours and sizes (an attribute can't run code).
  *  - Nothing can be framed, no plugins, forms only post back to this site.
  */
-export function buildCsp(nonce: string, options: { dev?: boolean } = {}): string {
-  const { dev = false } = options;
+export function buildCsp(nonce: string, options: { dev?: boolean; captcha?: boolean } = {}): string {
+  const { dev = false, captcha = false } = options;
   // The browser only ever talks to this site: every database call is made by the server, so the database's own
   // address is deliberately not listed here (a script that got in couldn't send data straight to it).
   const connect = ["'self'"];
@@ -32,6 +32,9 @@ export function buildCsp(nonce: string, options: { dev?: boolean } = {}): string
     "frame-ancestors 'none'",
     "manifest-src 'self'",
   ];
+  // The CAPTCHA (Cloudflare Turnstile) draws itself in a frame from Cloudflare. Its script is loaded by our own
+  // nonce-carrying script, which 'strict-dynamic' already allows, so only the frame needs naming.
+  if (captcha) directives.push("frame-src https://challenges.cloudflare.com");
   if (!dev) directives.push("upgrade-insecure-requests");
   return directives.join("; ");
 }

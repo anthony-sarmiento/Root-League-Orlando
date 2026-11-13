@@ -82,6 +82,13 @@ describe("buildCsp", () => {
     expect(csp).not.toContain("upgrade-insecure-requests");
   });
 
+  it("names Cloudflare's frame only when the CAPTCHA is on", () => {
+    expect(buildCsp("n")).not.toContain("challenges.cloudflare.com");
+    const csp = buildCsp("n", { captcha: true });
+    expect(csp).toContain("frame-src https://challenges.cloudflare.com");
+    expect(csp).toMatch(/script-src 'self' 'nonce-n' 'strict-dynamic'(;|$)/);
+  });
+
   it("only lets the browser talk to this site (the database is reached from the server)", () => {
     expect(buildCsp("n")).not.toMatch(/supabase/);
     expect(buildCsp("n")).toMatch(/connect-src 'self'(;|$)/);
