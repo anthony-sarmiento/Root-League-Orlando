@@ -46,8 +46,8 @@ export function TableSeats({ players }: { players: Player[] }) {
 function Table({ seats, number, offset = 0 }: { seats: Player[]; number: number; offset?: number }) {
   const open = PLAYERS_PER_GAME - seats.length;
   return (
-    <div className="rounded-2xl border-2 border-bark/15 bg-parchment/70 p-3">
-      <p className="mb-2 text-xs font-bold tracking-wide text-bark-soft uppercase">
+    <div className="table-felt">
+      <p className="mb-2 text-xs font-bold tracking-wide text-parchment/85 uppercase">
         Table {number}
         {open > 0 && seats.length > 0 && <span className="ml-2 font-semibold normal-case">{open} open</span>}
       </p>
@@ -60,7 +60,7 @@ function Table({ seats, number, offset = 0 }: { seats: Player[]; number: number;
         {Array.from({ length: open }, (_, i) => (
           <span
             key={`open-${i}`}
-            className="h-11 w-11 shrink-0 rounded-full border-2 border-dashed border-bark/30"
+            className="h-11 w-11 shrink-0 rounded-full border-2 border-dashed border-parchment/45 bg-black/10"
           />
         ))}
       </div>

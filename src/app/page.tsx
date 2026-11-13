@@ -123,7 +123,7 @@ export default async function Home() {
       </Banner>
 
       {/* Standings */}
-      <section className="card relative p-5 sm:p-8">
+      <section className="card card-paper relative p-5 sm:p-8">
         <SectionHeading
           title={
             <span className="flex items-center gap-3">
@@ -160,7 +160,9 @@ export default async function Home() {
           <div className="mt-8 grid items-end gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <Podium rows={leaderboard} players={players} />
             {leaderboard.length > 3 ? (
-              <LeaderboardTable rows={leaderboard.slice(3, 8)} players={players} compact />
+              <div className="ledger">
+                <LeaderboardTable rows={leaderboard.slice(3, 8)} players={players} compact />
+              </div>
             ) : (
               <p className="rounded-2xl bg-parchment/70 p-6 text-bark-soft">
                 Everyone on the board this season is on the podium. Join a game night to climb in.
@@ -194,7 +196,7 @@ export default async function Home() {
           )}
         </section>
 
-        <section className="card relative h-fit p-5 sm:p-8">
+        <section className="card card-paper relative h-fit p-5 sm:p-8">
           <Perch id="sergeant-atheldrydd" w={96} right="2.5rem" />
           <SectionHeading
             title="How points work"
@@ -284,8 +286,8 @@ export default async function Home() {
                     {night.games
                       .filter((g) => g.round === round)
                       .map((g, i) => (
-                        <li key={g.id} className="card p-5">
-                          <p className="mb-3 text-sm font-bold tracking-wide text-bark-soft uppercase">
+                        <li key={g.id} className="card card-paper p-5">
+                          <p className="-mx-5 -mt-5 mb-4 rounded-t-[1.1rem] border-b-2 border-bark/15 bg-bark/[0.08] px-5 py-2.5 text-sm font-bold tracking-wide text-bark-soft uppercase">
                             Table {i + 1}
                             {g.results.length === 3 && <span className="ml-2 font-semibold normal-case">3 players</span>}
                           </p>

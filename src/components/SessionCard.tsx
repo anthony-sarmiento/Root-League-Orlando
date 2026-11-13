@@ -31,7 +31,7 @@ export function SessionCard({ session, attendees, state, featured = false }: Pro
   const upcoming = state !== "past";
 
   return (
-    <article className={`card ${featured ? "stitched" : ""} flex gap-5 p-5 sm:p-6`}>
+    <article className={`card card-paper ${featured ? "stitched" : ""} flex gap-5 p-5 sm:p-6`}>
       <div
         className={`plaque flex shrink-0 flex-col items-center overflow-hidden rounded-2xl text-center ${featured ? "h-28 w-24" : "h-24 w-[4.75rem]"}`}
         aria-hidden="true"

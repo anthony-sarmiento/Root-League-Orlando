@@ -720,3 +720,147 @@ textarea.field { min-height: 6rem; resize: vertical; }
 html:not(.ready) :is(.tile-bg, .pattern-strip, .trade-art, .pattern-fade, .avatar-bg) {
   background-image: none !important;
 }
+
+/* --------------------------------------------------- Boxes: podium, tickets, ledger */
+
+/* A softer, warmer paper for the cards that carry a feature: a little light from the top corner and faint grain. */
+.card-paper {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 247, 220, 0.75), transparent 58%),
+    repeating-linear-gradient(0deg, rgba(120, 84, 40, 0.035) 0 1px, transparent 1px 5px),
+    var(--color-card);
+}
+
+/* A recessed panel, like a ledger sunk into the card. */
+.ledger {
+  border-radius: 1.1rem;
+  border: 1.5px solid rgba(75, 52, 38, 0.18);
+  background: rgba(255, 250, 235, 0.38);
+  box-shadow: inset 0 2px 8px rgba(75, 52, 38, 0.14);
+}
+.ledger .woods-table th { background: rgba(75, 52, 38, 0.07); }
+.ledger .woods-table thead th:first-child { border-top-left-radius: 0.9rem; }
+.ledger .woods-table thead th:last-child { border-top-right-radius: 0.9rem; }
+
+/* The podium: a spotlit alcove with carved, bevelled steps on a wooden plinth. */
+.podium-stage {
+  position: relative;
+  overflow: hidden;
+  padding: 2.4rem 0.75rem 0;
+  border-radius: 1.15rem;
+  border: 1.5px solid rgba(75, 52, 38, 0.2);
+  background:
+    radial-gradient(55% 75% at 50% 30%, rgba(255, 238, 178, 0.85), rgba(255, 238, 178, 0) 72%),
+    linear-gradient(180deg, rgba(75, 52, 38, 0.05), rgba(75, 52, 38, 0.16));
+  box-shadow: inset 0 3px 10px rgba(75, 52, 38, 0.16);
+}
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 0.5rem; }
+.podium-ring {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(75, 52, 38, 0.28), 0 8px 14px -6px rgba(75, 52, 38, 0.65);
+}
+.podium-tag {
+  margin-top: 0.55rem;
+  max-width: 100%;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid rgba(75, 52, 38, 0.2);
+  background: rgba(255, 250, 238, 0.82);
+  box-shadow: 0 2px 0 rgba(75, 52, 38, 0.13);
+  transition: background 0.2s, transform 0.2s var(--ease-out);
+}
+.podium-tag:hover { background: #fffaf0; transform: translateY(-2px); }
+.podium-step {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.6rem;
+  width: 100%;
+  padding-top: 0.45rem;
+  border: 2px solid rgba(75, 52, 38, 0.38);
+  border-bottom: 0;
+  border-radius: 0.95rem 0.95rem 0 0;
+  background: linear-gradient(180deg, var(--light) 0 10%, var(--base) 10% 58%, var(--dark) 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.55), inset 0 -12px 18px -10px rgba(0, 0, 0, 0.3);
+}
+.podium-step::after {
+  content: "";
+  position: absolute;
+  inset: 6px 6px 0;
+  border: 1.5px dashed rgba(75, 52, 38, 0.3);
+  border-bottom: 0;
+  border-radius: 0.6rem 0.6rem 0 0;
+  pointer-events: none;
+}
+.podium-numeral {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: rgba(75, 52, 38, 0.8);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55), 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+.podium-plinth {
+  display: block;
+  height: 14px;
+  margin: 0 -0.75rem;
+  border-top: 3px solid #3d281a;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.09) 0 2px, transparent 2px 64px),
+    linear-gradient(#7a5236, #5b3b26);
+}
+
+/* League-point tickets: a medal, the points, and a notch cut out of each side. */
+.lp-ticket {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 1.1rem 0.6rem 0.85rem;
+  text-align: center;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 2px solid rgba(75, 52, 38, 0.3);
+  /* A strip of the medal colour across the top, then the paper. */
+  background: linear-gradient(var(--base) 0 7px, transparent 7px), linear-gradient(180deg, #fcf5e2, #f0e0b6);
+  box-shadow: 0 3px 0 rgba(75, 52, 38, 0.18);
+}
+.lp-ticket::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 0 54%, var(--color-card) 0 6px, rgba(75, 52, 38, 0.3) 6px 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 54%, var(--color-card) 0 6px, rgba(75, 52, 38, 0.3) 6px 8px, transparent 8.5px);
+}
+.lp-medal {
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  margin-bottom: 0.4rem;
+  border-radius: 999px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: rgba(75, 52, 38, 0.85);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.22), inset 0 2px 3px rgba(255, 255, 255, 0.5), 0 0 0 2px rgba(75, 52, 38, 0.3),
+    0 5px 8px -4px rgba(0, 0, 0, 0.45);
+}
+.lp-meter { margin-top: 0.55rem; height: 6px; width: 100%; border-radius: 999px; background: rgba(75, 52, 38, 0.13); overflow: hidden; }
+.lp-meter > span { display: block; height: 100%; border-radius: 999px; }
+
+/* A card table: green baize in a wooden rim, with whoever is going sitting on it. */
+.table-felt {
+  padding: 0.75rem;
+  color: var(--color-parchment);
+  border-radius: 1.1rem;
+  border: 3px solid #6b4a2e;
+  background: radial-gradient(120% 150% at 50% 0%, #52803f, #34592a 72%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07), inset 0 6px 14px rgba(0, 0, 0, 0.35), 0 2px 0 rgba(61, 40, 26, 0.5);
+}
