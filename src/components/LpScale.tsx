@@ -17,7 +17,7 @@ export function LpScale() {
 
   return (
     <div className="@container">
-      <ol className="grid grid-cols-2 gap-3 @lg:grid-cols-4" aria-label="League points by finishing place">
+      <ol className="grid grid-cols-2 gap-3 @md:grid-cols-4" aria-label="League points by finishing place">
         {PLACEMENTS.map((place) => {
           const lp = LP_BY_PLACEMENT[place];
           const m = MEDALS[place];

@@ -122,7 +122,8 @@ p { text-wrap: pretty; }
 .card {
   position: relative;
   color: var(--color-bark);
-  background: var(--color-card);
+  /* Light from the top left, settling into a warmer parchment at the bottom right. */
+  background: linear-gradient(155deg, #f4e8c4 0%, #e9d8ab 48%, #e0cb98 100%);
   border: 2px solid rgba(75, 52, 38, 0.55);
   border-radius: 1.25rem;
   box-shadow: var(--shadow-card);
@@ -726,9 +727,9 @@ html:not(.ready) :is(.tile-bg, .pattern-strip, .trade-art, .pattern-fade, .avata
 /* A softer, warmer paper for the cards that carry a feature: a little light from the top corner and faint grain. */
 .card-paper {
   background:
-    radial-gradient(120% 90% at 0% 0%, rgba(255, 247, 220, 0.75), transparent 58%),
+    radial-gradient(110% 80% at 0% 0%, rgba(255, 249, 226, 0.8), transparent 60%),
     repeating-linear-gradient(0deg, rgba(120, 84, 40, 0.035) 0 1px, transparent 1px 5px),
-    var(--color-card);
+    linear-gradient(155deg, #f6ebc9 0%, #e9d8ab 50%, #dfc996 100%);
 }
 
 /* A recessed panel, like a ledger sunk into the card. */

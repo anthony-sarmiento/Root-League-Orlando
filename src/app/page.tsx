@@ -174,7 +174,7 @@ export default async function Home() {
 
       {/* Next game night + how points work */}
       <div className="grid gap-8 lg:grid-cols-[1.25fr_1fr]">
-        <section className="space-y-5">
+        <section className="flex flex-col gap-5">
           <SectionHeading
             onDark
             title="Next game night"
@@ -185,24 +185,27 @@ export default async function Home() {
             }
           />
           {nextSession ? (
-            <SessionCard
-              session={nextSession}
-              attendees={attendees}
-              state={rsvpStateFor(viewer, nextSession, signups, today)}
-              featured
-            />
+            // Stretches to match the points box beside it.
+            <div className="flex-1 [&>article]:h-full">
+              <SessionCard
+                session={nextSession}
+                attendees={attendees}
+                state={rsvpStateFor(viewer, nextSession, signups, today)}
+                featured
+              />
+            </div>
           ) : (
             <p className="card p-6 text-bark-soft">Nothing is scheduled yet. Check back soon!</p>
           )}
         </section>
 
-        <section className="card card-paper relative h-fit p-5 sm:p-8">
-          <Perch id="sergeant-atheldrydd" w={96} right="2.5rem" />
-          <SectionHeading
-            title="How points work"
-            description={`A table seats ${PLAYERS_PER_GAME} players, sometimes 3, and where you finish sets your league points. A night can run a round or two and several tables at once; every table you play counts toward your season.`}
-          />
-          <div className="mt-6">
+        <section className="flex flex-col gap-5">
+          <SectionHeading onDark title="How points work" />
+          <div className="card card-paper relative flex-1 p-5 sm:p-6">
+            <Perch id="sergeant-atheldrydd" w={96} right="2.5rem" />
+            <p className="mb-4 max-w-[60ch] text-bark-soft">
+              {`A table seats ${PLAYERS_PER_GAME} players, sometimes 3, and where you finish sets your league points. Every table you play counts toward your season.`}
+            </p>
             <LpScale />
           </div>
         </section>
