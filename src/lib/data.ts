@@ -138,13 +138,27 @@ async function fetchFromSupabase(): Promise<Omit<LeagueData, "isSample">> {
         ),
     ),
     orFallback(
-      async () =>
-        (
-          await fetchAll<{ number: number; starts_on: string; ends_on: string }>(
-            (from, to) => db.from("seasons").select("number, starts_on, ends_on").order("number").range(from, to),
-            "seasons",
-          )
-        ).map((s) => makeSeason({ number: s.number, startsOn: s.starts_on, endsOn: s.ends_on })),
+      () =>
+        orFallback(
+          async () =>
+            (
+              await fetchAll<{ number: number; starts_on: string; ends_on: string; prize_override: number | null }>(
+                (from, to) =>
+                  db.from("seasons").select("number, starts_on, ends_on, prize_override").order("number").range(from, to),
+                "seasons",
+              )
+            ).map((s) =>
+              makeSeason({ number: s.number, startsOn: s.starts_on, endsOn: s.ends_on, prizeOverride: s.prize_override ?? undefined }),
+            ),
+          // Prize overrides not migrated yet: seasons without them.
+          async () =>
+            (
+              await fetchAll<{ number: number; starts_on: string; ends_on: string }>(
+                (from, to) => db.from("seasons").select("number, starts_on, ends_on").order("number").range(from, to),
+                "seasons",
+              )
+            ).map((s) => makeSeason({ number: s.number, startsOn: s.starts_on, endsOn: s.ends_on })),
+        ),
       () => DEFAULT_SEASONS,
     ),
     orFallback(

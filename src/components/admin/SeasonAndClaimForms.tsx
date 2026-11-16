@@ -8,10 +8,14 @@ interface SeasonProps {
   number: number;
   startsOn: string;
   endsOn: string;
+  /** The amount an organizer set, if any. */
+  prizeOverride?: number;
+  /** What the games add up to, shown as a hint under the box. */
+  countedPrize?: number;
 }
 
 /** One season's dates, editable in place; or an empty row to add the next one. */
-export function SeasonForm({ number, startsOn, endsOn, isNew = false }: SeasonProps & { isNew?: boolean }) {
+export function SeasonForm({ number, startsOn, endsOn, prizeOverride, countedPrize, isNew = false }: SeasonProps & { isNew?: boolean }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveSeason, {});
 
   return (
@@ -36,11 +40,33 @@ export function SeasonForm({ number, startsOn, endsOn, isNew = false }: SeasonPr
           <span className="text-sm font-bold">Ends</span>
           <input name="endsOn" type="date" required defaultValue={endsOn} className="field mt-1" />
         </label>
+        {!isNew && (
+          <label className="block w-36">
+            <span className="text-sm font-bold">Prize pool ($)</span>
+            <input
+              name="prizeOverride"
+              type="text"
+              inputMode="numeric"
+              maxLength={7}
+              defaultValue={prizeOverride ?? ""}
+              placeholder={countedPrize === undefined ? "Count it" : `Auto: ${countedPrize}`}
+              aria-describedby={`prize-hint-${number}`}
+              className="field mt-1"
+            />
+          </label>
+        )}
         <button type="submit" disabled={pending} className="btn small">
           {pending ? "Saving…" : isNew ? "Add season" : "Save"}
         </button>
         {!isNew && <DeleteSeason number={number} />}
       </form>
+      {!isNew && (
+        <p id={`prize-hint-${number}`} className="text-sm text-bark-soft">
+          {prizeOverride !== undefined
+            ? `Showing your amount, $${prizeOverride}. The games add up to $${countedPrize ?? 0}. Clear the box and save to go back to counting.`
+            : `Counted from the games: $${countedPrize ?? 0} ($5 per player per night). Type an amount to override it.`}
+        </p>
+      )}
       <FormMessages state={state} />
     </div>
   );

@@ -35,9 +35,11 @@ export function PrizePool({ pool, seasonName, leaderName, finished = false }: Pr
           Every player adds <strong className="text-bark">{dollars(ENTRY_FEE)}</strong> for each game night they play.
         </p>
         <p className="text-sm">
-          {pool.entries === 0
-            ? "No entries yet. The pool starts with the first game night."
-            : `${pool.entries} ${pool.entries === 1 ? "entry" : "entries"} × ${dollars(ENTRY_FEE)} across ${pool.nights} ${pool.nights === 1 ? "night" : "nights"}.`}
+          {pool.overridden
+            ? "This amount was set by the organizers."
+            : pool.entries === 0
+              ? "No entries yet. The pool starts with the first game night."
+              : `${pool.entries} ${pool.entries === 1 ? "entry" : "entries"} × ${dollars(ENTRY_FEE)} across ${pool.nights} ${pool.nights === 1 ? "night" : "nights"}.`}
         </p>
         <p className="font-semibold text-bark">
           {finished && leaderName

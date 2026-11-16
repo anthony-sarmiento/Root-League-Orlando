@@ -233,19 +233,27 @@ export interface PrizePool {
   entries: number;
   /** Different game nights with at least one logged table. */
   nights: number;
-  /** Entries times the entry fee. */
+  /** What the games add up to: entries times the entry fee. */
+  counted: number;
+  /** What the site shows: the organizer's amount if one was set, otherwise `counted`. */
   amount: number;
+  /** True when an organizer set the amount by hand. */
+  overridden: boolean;
 }
 
-/** The pool for the games given (pass one season's games): every player adds the entry fee for each night they play. */
-export function buildPrizePool(games: Game[]): PrizePool {
+/**
+ * The pool for the games given (pass one season's games): every player adds the entry fee for each night they play.
+ * An organizer-set `override` replaces the counted amount.
+ */
+export function buildPrizePool(games: Game[], override?: number): PrizePool {
   const entries = new Set<string>();
   const nights = new Set<string>();
   for (const game of games) {
     nights.add(game.playedOn);
     for (const r of game.results) entries.add(`${r.playerId}|${game.playedOn}`);
   }
-  return { entries: entries.size, nights: nights.size, amount: entries.size * ENTRY_FEE };
+  const counted = entries.size * ENTRY_FEE;
+  return { entries: entries.size, nights: nights.size, counted, amount: override ?? counted, overridden: override !== undefined };
 }
 
 // ---- Faction matchups -----------------------------------------------------

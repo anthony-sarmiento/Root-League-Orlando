@@ -6,7 +6,7 @@ import { isUuid } from "@/lib/email";
 import { cleanPlayerName } from "@/lib/player-name";
 import { parseGameForm, toRpcResults } from "@/lib/game-form-data";
 import { validateGameInput, type GameInput } from "@/lib/game-input";
-import { validateSeasonInput } from "@/lib/season-input";
+import { parsePrizeOverride, validateSeasonInput } from "@/lib/season-input";
 
 export interface FormState {
   ok?: string;
@@ -412,11 +412,17 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
   const existing = (rows ?? []).map((r) => ({ number: r.number, startsOn: r.starts_on, endsOn: r.ends_on }));
 
   const errors = validateSeasonInput(candidate, existing);
+  const prize = parsePrizeOverride(text(formData, "prizeOverride"));
+  if (prize.error) errors.push(prize.error);
   if (errors.length) return { errors };
 
-  const { error } = await admin.supabase
-    .from("seasons")
-    .upsert({ number: candidate.number, starts_on: candidate.startsOn, ends_on: candidate.endsOn });
+  const row = { number: candidate.number, starts_on: candidate.startsOn, ends_on: candidate.endsOn };
+  let { error } = await admin.supabase.from("seasons").upsert({ ...row, prize_override: prize.value });
+  if (error && ["42703", "PGRST204"].includes(error.code ?? "")) {
+    // The prize migration (0012) hasn't been run yet. Dates can still be saved; a prize amount can't.
+    if (prize.value !== null) return { errors: ["The prize pool column isn't in the database yet. Run migration 0012 first."] };
+    ({ error } = await admin.supabase.from("seasons").upsert(row));
+  }
   if (error) return { errors: ["Couldn't save that season."] };
 
   refresh();

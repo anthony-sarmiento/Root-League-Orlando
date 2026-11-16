@@ -25,7 +25,7 @@ await db.exec(`
   alter default privileges in schema public grant all on functions to anon, authenticated;
 `);
 
-for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql", "0009_connect_accounts.sql", "0010_privacy.sql", "0011_tighten_helper.sql"]) {
+for (const f of ["0001_initial.sql", "0002_accounts_rsvps_seasons.sql", "0003_homeland_factions.sql", "0004_avatar_background.sql", "0005_avatar_position.sql", "0006_name_safety.sql", "0007_rounds_and_tables.sql", "0008_game_reports.sql", "0009_connect_accounts.sql", "0010_privacy.sql", "0011_tighten_helper.sql", "0012_prize_override.sql"]) {
   await db.exec(fs.readFileSync(MIG + f, "utf8"));
   console.log("applied", f);
 }
@@ -56,6 +56,16 @@ const seasons = await as("anon", null, () => db.query("select number, starts_on:
 ok(seasons.rows.length === 2 && seasons.rows[0].starts_on === "2026-06-07" && seasons.rows[1].ends_on === "2026-12-20", "anon reads seeded seasons (S1 Jun 7-Sep 7, S2 Nov 1-Dec 20)");
 await mustFail("regular user cannot add a season", () => as("authenticated", who("b"), () => db.query("insert into seasons values (3,'2027-01-01','2027-02-01')")));
 await mustWork("organizer can add a season", () => as("authenticated", who("admin"), () => db.query("insert into seasons values (3,'2027-01-01','2027-02-01')")));
+// Row-level security hides the row from a regular user, so the update changes nothing (no error is raised).
+const userEdit = await as("authenticated", who("b"), () => db.query("update seasons set prize_override = 500 where number = 3"));
+const stillAuto = await as("anon", null, () => db.query("select prize_override from seasons where number = 3"));
+ok(userEdit.affectedRows === 0 && stillAuto.rows[0].prize_override === null, "regular user cannot set a prize pool");
+await mustWork("organizer can set a prize pool", () => as("authenticated", who("admin"), () => db.query("update seasons set prize_override = 120 where number = 3")));
+const prizeSeen = await as("anon", null, () => db.query("select prize_override from seasons where number = 3"));
+ok(prizeSeen.rows[0].prize_override === 120, "the public can read a season's prize pool");
+await mustFail("a negative prize pool is refused", () => as("authenticated", who("admin"), () => db.query("update seasons set prize_override = -5 where number = 3")));
+await mustFail("an absurd prize pool is refused", () => as("authenticated", who("admin"), () => db.query("update seasons set prize_override = 1000000 where number = 3")));
+await mustWork("organizer can clear it again", () => as("authenticated", who("admin"), () => db.query("update seasons set prize_override = null where number = 3")));
 
 // --- Profiles --------------------------------------------------------------
 const bPlayer = (await mustWork("B creates own profile", () => as("authenticated", who("b"),

@@ -28,7 +28,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
   const season = seasons.find((s) => s.number === selected);
   const seasonGames = season ? gamesInSeason(games, season) : [];
   const rows = season ? buildLeaderboard(players, seasonGames) : [];
-  const pool = buildPrizePool(seasonGames);
+  const pool = buildPrizePool(seasonGames, season?.prizeOverride);
   const phase = season ? seasonPhase(season, today) : undefined;
   const leader = rows[0];
 

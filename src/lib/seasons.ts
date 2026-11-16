@@ -10,6 +10,8 @@ export interface SeasonRow {
   number: number;
   startsOn: string; // YYYY-MM-DD
   endsOn: string; // YYYY-MM-DD (inclusive)
+  /** Whole dollars an organizer set for the prize pool; undefined means count it from the games. */
+  prizeOverride?: number;
 }
 
 export interface Season extends SeasonRow {

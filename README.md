@@ -30,7 +30,7 @@ To see the site with demo data even when `.env.local` is set, run `node scripts/
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`, then `0006_name_safety.sql`, then `0007_rounds_and_tables.sql`, then `0008_game_reports.sql`, then `0009_connect_accounts.sql`, then `0010_privacy.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
+2. In the SQL editor run, **in order**, everything in [`supabase/migrations/`](supabase/migrations): `0001_initial.sql`, `0002_accounts_rsvps_seasons.sql`, `0003_homeland_factions.sql`, `0004_avatar_background.sql`, then `0005_avatar_position.sql`, then `0006_name_safety.sql`, then `0007_rounds_and_tables.sql`, then `0008_game_reports.sql`, then `0009_connect_accounts.sql`, then `0010_privacy.sql`, then `0011_tighten_helper.sql`, then `0012_prize_override.sql`. (Run 0002 and 0003 before deploying a version of the site that uses accounts; the site tolerates a missing 0002 but accounts won't work until it's applied.)
 3. Copy `.env.example` to `.env.local` and fill in the project URL and publishable (or anon) key from *Project Settings → API*.
 4. *Authentication → Providers → Email*: turn **Confirm email** off, so players can sign up instantly. Set the Site URL under *Authentication → URL Configuration* to your Vercel domain.
 5. Make yourself an organizer: sign up on the site (or *Authentication → Users → Add user*), then run:

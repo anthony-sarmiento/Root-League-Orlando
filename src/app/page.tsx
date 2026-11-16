@@ -32,7 +32,7 @@ export default async function Home() {
   const season = featuredSeason(seasons, today);
   const phase = season ? seasonPhase(season, today) : undefined;
   const leaderboard = season ? buildLeaderboard(players, gamesInSeason(games, season)) : [];
-  const prize = season ? buildPrizePool(gamesInSeason(games, season)) : undefined;
+  const prize = season ? buildPrizePool(gamesInSeason(games, season), season.prizeOverride) : undefined;
   const prizeLabel = prize && prize.amount > 0 ? `the ${dollars(prize.amount)} prize pool` : "the prize pool";
   const totals = leagueTotals(games);
   const factionStats = new Map(buildFactionStats(players, games).map((r) => [r.faction, r]));

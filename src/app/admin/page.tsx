@@ -15,6 +15,7 @@ import { getLeagueData } from "@/lib/data";
 import { looksLikeDuplicate } from "@/lib/game-report";
 import { fetchPendingReports } from "@/lib/reports";
 import { todayISO } from "@/lib/seasons";
+import { buildPrizePool, gamesInSeason } from "@/lib/stats";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export const metadata: Metadata = { title: "Organizer tools" };
@@ -191,11 +192,20 @@ export default async function AdminPage() {
       <section className="card p-5">
         <h2 className="mb-1 text-2xl font-bold">Seasons</h2>
         <p className="mb-4 text-bark-soft">
-          Seasons can run any dates, but they can&apos;t overlap. A game counts towards the season it was played in.
+          Seasons can run any dates, but they can&apos;t overlap. A game counts towards the season it was played in. The
+          prize pool is counted from the games ($5 per player per game night); if it ever needs correcting, type the
+          right amount in its box and save.
         </p>
         <div className="space-y-4">
           {[...seasons].reverse().map((x) => (
-            <SeasonForm key={`${x.number}-${x.startsOn}-${x.endsOn}`} number={x.number} startsOn={x.startsOn} endsOn={x.endsOn} />
+            <SeasonForm
+              key={`${x.number}-${x.startsOn}-${x.endsOn}-${x.prizeOverride ?? "auto"}`}
+              number={x.number}
+              startsOn={x.startsOn}
+              endsOn={x.endsOn}
+              prizeOverride={x.prizeOverride}
+              countedPrize={buildPrizePool(gamesInSeason(games, x)).counted}
+            />
           ))}
           <div className="border-t-2 border-dashed border-bark/15 pt-4">
             <SeasonForm number={nextSeasonNumber} startsOn="" endsOn="" isNew />

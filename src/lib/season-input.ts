@@ -30,3 +30,19 @@ export function validateSeasonInput(candidate: SeasonRow, existing: SeasonRow[])
   }
   return errors;
 }
+
+/** The most an organizer can set the prize pool to. */
+export const MAX_PRIZE_OVERRIDE = 100000;
+
+/**
+ * Reads the "prize pool" box on the season form. Empty means "count it from the games" (null). Otherwise it has to be
+ * a whole number of dollars from 0 to MAX_PRIZE_OVERRIDE.
+ */
+export function parsePrizeOverride(raw: string): { value: number | null; error?: string } {
+  const text = raw.trim().replace(/^\$/, "").replace(/,/g, "");
+  if (text === "") return { value: null };
+  if (!/^\d+$/.test(text)) return { value: null, error: "The prize pool must be a whole number of dollars, like 85." };
+  const value = Number(text);
+  if (value > MAX_PRIZE_OVERRIDE) return { value: null, error: `The prize pool can't be more than $${MAX_PRIZE_OVERRIDE.toLocaleString("en-US")}.` };
+  return { value };
+}

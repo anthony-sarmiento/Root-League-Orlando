@@ -273,10 +273,17 @@ describe("buildPrizePool", () => {
       game("p3", "2026-11-17", ["a", "b", "c", "d"]),
     ];
     // Night 1: a, b, c, d, e = 5 entries. Night 2: a, b, c, d = 4 entries.
-    expect(buildPrizePool(games)).toEqual({ entries: 9, nights: 2, amount: 45 });
+    expect(buildPrizePool(games)).toEqual({ entries: 9, nights: 2, counted: 45, amount: 45, overridden: false });
   });
 
   it("is empty with no games", () => {
-    expect(buildPrizePool([])).toEqual({ entries: 0, nights: 0, amount: 0 });
+    expect(buildPrizePool([])).toEqual({ entries: 0, nights: 0, counted: 0, amount: 0, overridden: false });
+  });
+
+  it("shows an organizer's amount instead of the count, and still reports the count", () => {
+    const games = [game("p1", "2026-11-03", ["a", "b", "c", "d"])];
+    expect(buildPrizePool(games, 100)).toEqual({ entries: 4, nights: 1, counted: 20, amount: 100, overridden: true });
+    // Zero is a real amount, not "unset".
+    expect(buildPrizePool(games, 0).amount).toBe(0);
   });
 });
