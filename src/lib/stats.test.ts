@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FactionId, Game, Placement, Player } from "./league";
 import { DEFAULT_SEASONS, featuredSeason, seasonByNumber, seasonForDate, seasonPhase } from "./seasons";
-import { buildFactionDetail, buildFactionStats, buildMatchupTable, pickMatchups, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
+import { buildFactionDetail, buildFactionStats, buildMatchupTable, buildPrizePool, pickMatchups, buildLeaderboard, buildPlayerProfile, gamesInSeason } from "./stats";
 
 const players: Player[] = ["a", "b", "c", "d", "e"].map((id) => ({ id, name: id.toUpperCase() }));
 
@@ -262,5 +262,21 @@ describe("faction matchups", () => {
     expect(buildFactionDetail("marquise", players, games).matchups.best?.opponent).toBe("vagabond");
     const row = buildFactionStats(players, games).find((r) => r.faction === "marquise")!;
     expect(row.rival?.opponent).toBe("alliance");
+  });
+});
+
+describe("buildPrizePool", () => {
+  it("adds the entry fee once per player per game night, however many tables they play", () => {
+    const games = [
+      game("p1", "2026-11-03", ["a", "b", "c", "d"]),
+      game("p2", "2026-11-03", ["a", "b", "c", "e"]),
+      game("p3", "2026-11-17", ["a", "b", "c", "d"]),
+    ];
+    // Night 1: a, b, c, d, e = 5 entries. Night 2: a, b, c, d = 4 entries.
+    expect(buildPrizePool(games)).toEqual({ entries: 9, nights: 2, amount: 45 });
+  });
+
+  it("is empty with no games", () => {
+    expect(buildPrizePool([])).toEqual({ entries: 0, nights: 0, amount: 0 });
   });
 });

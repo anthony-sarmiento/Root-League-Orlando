@@ -32,6 +32,9 @@ export const LP_BY_PLACEMENT: Record<Placement, number> = {
 
 export const PLACEMENTS: Placement[] = [1, 2, 3, 4];
 
+/** Dollars each player adds to the prize pool, once per game night they play. */
+export const ENTRY_FEE = 5;
+
 /** A faction needs at least this many games before it can be a player's "best faction". */
 export const MIN_GAMES_FOR_BEST_FACTION = 2;
 

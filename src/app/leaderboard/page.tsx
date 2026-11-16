@@ -4,12 +4,13 @@ import { Perch } from "@/components/Critters";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { LpScale } from "@/components/LpScale";
 import { PageHeader } from "@/components/PageHeader";
+import { PrizePool } from "@/components/PrizePool";
 import { Podium } from "@/components/Podium";
 import { SeasonPicker, parseSeasonParam } from "@/components/SeasonPicker";
 import { getLeagueData } from "@/lib/data";
 import { getViewer } from "@/lib/viewer";
 import { featuredSeason, seasonPhase, todayISO } from "@/lib/seasons";
-import { buildLeaderboard, gamesInSeason } from "@/lib/stats";
+import { buildLeaderboard, buildPrizePool, gamesInSeason } from "@/lib/stats";
 
 export const metadata: Metadata = { title: "Leaderboard" };
 export const dynamic = "force-dynamic";
@@ -25,7 +26,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
     featured?.number ?? "all",
   );
   const season = seasons.find((s) => s.number === selected);
-  const rows = season ? buildLeaderboard(players, gamesInSeason(games, season)) : [];
+  const seasonGames = season ? gamesInSeason(games, season) : [];
+  const rows = season ? buildLeaderboard(players, seasonGames) : [];
+  const pool = buildPrizePool(seasonGames);
   const phase = season ? seasonPhase(season, today) : undefined;
   const leader = rows[0];
 
@@ -39,6 +42,15 @@ export default async function LeaderboardPage({ searchParams }: PageProps<"/lead
       >
         <SeasonPicker basePath="/leaderboard" seasons={seasons} selected={selected} />
       </PageHeader>
+
+      {season && phase !== "upcoming" && (
+        <PrizePool
+          pool={pool}
+          seasonName={season.label.split(" \u00b7 ")[0]}
+          leaderName={leader?.player.name}
+          finished={phase === "finished"}
+        />
+      )}
 
       {season && phase === "finished" && leader && (
         <p className="card stitched flex items-center justify-center gap-3 p-5 text-center font-title text-xl font-bold">

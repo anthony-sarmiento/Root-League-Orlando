@@ -18,3 +18,8 @@ export function ordinal(n: number): string {
   const v = n % 100;
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
+
+/** Whole dollars, like "$85". */
+export function dollars(amount: number): string {
+  return `$${Math.round(amount).toLocaleString("en-US")}`;
+}

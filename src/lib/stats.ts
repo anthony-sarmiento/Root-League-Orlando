@@ -1,4 +1,5 @@
 import {
+  ENTRY_FEE,
   FACTIONS,
   MIN_GAMES_FOR_BEST_FACTION,
   lpForPlacement,
@@ -223,6 +224,28 @@ export function buildPlayerProfile(
     history,
     bySeason,
   };
+}
+
+// ---- Prize pool -----------------------------------------------------------
+
+export interface PrizePool {
+  /** One entry per player per game night they played at least one table. */
+  entries: number;
+  /** Different game nights with at least one logged table. */
+  nights: number;
+  /** Entries times the entry fee. */
+  amount: number;
+}
+
+/** The pool for the games given (pass one season's games): every player adds the entry fee for each night they play. */
+export function buildPrizePool(games: Game[]): PrizePool {
+  const entries = new Set<string>();
+  const nights = new Set<string>();
+  for (const game of games) {
+    nights.add(game.playedOn);
+    for (const r of game.results) entries.add(`${r.playerId}|${game.playedOn}`);
+  }
+  return { entries: entries.size, nights: nights.size, amount: entries.size * ENTRY_FEE };
 }
 
 // ---- Faction matchups -----------------------------------------------------

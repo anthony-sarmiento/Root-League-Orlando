@@ -865,3 +865,17 @@ html:not(.ready) :is(.tile-bg, .pattern-strip, .trade-art, .pattern-fade, .avata
   background: radial-gradient(120% 150% at 50% 0%, #52803f, #34592a 72%);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07), inset 0 6px 14px rgba(0, 0, 0, 0.35), 0 2px 0 rgba(61, 40, 26, 0.5);
 }
+
+/* The prize pool's purse: a gold medallion with a coin stack. */
+.prize-purse {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  color: rgba(75, 52, 38, 0.88);
+  background: radial-gradient(circle at 32% 28%, #f6dc92, #e2b04a 55%, #b8822a);
+  box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.22), inset 0 3px 4px rgba(255, 255, 255, 0.5), 0 0 0 3px rgba(75, 52, 38, 0.3),
+    0 8px 12px -6px rgba(0, 0, 0, 0.5);
+}

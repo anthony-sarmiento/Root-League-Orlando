@@ -13,11 +13,11 @@ import { SessionCard } from "@/components/SessionCard";
 import { FACTION_CRITTER, critterSrc } from "@/lib/critters";
 import { imageSize } from "@/lib/image-sizes.generated";
 import { getLeagueData } from "@/lib/data";
-import { formatDate, ordinal, pct } from "@/lib/format";
+import { dollars, formatDate, ordinal, pct } from "@/lib/format";
 import { FACTIONS, PLAYERS_PER_GAME } from "@/lib/league";
 import { rsvpStateFor } from "@/lib/rsvp";
 import { daysBetween, featuredSeason, seasonPhase, todayISO } from "@/lib/seasons";
-import { buildFactionStats, buildLeaderboard, gamesInSeason, leagueTotals } from "@/lib/stats";
+import { buildFactionStats, buildLeaderboard, buildPrizePool, gamesInSeason, leagueTotals } from "@/lib/stats";
 import { getViewer } from "@/lib/viewer";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,8 @@ export default async function Home() {
   const season = featuredSeason(seasons, today);
   const phase = season ? seasonPhase(season, today) : undefined;
   const leaderboard = season ? buildLeaderboard(players, gamesInSeason(games, season)) : [];
+  const prize = season ? buildPrizePool(gamesInSeason(games, season)) : undefined;
+  const prizeLabel = prize && prize.amount > 0 ? `the ${dollars(prize.amount)} prize pool` : "the prize pool";
   const totals = leagueTotals(games);
   const factionStats = new Map(buildFactionStats(players, games).map((r) => [r.faction, r]));
   const daysLeft = season ? daysBetween(today, season.endsOn) : 0;
@@ -136,7 +138,7 @@ export default async function Home() {
               <>
                 <span className="font-semibold text-bark">{season.label.split(" · ")[1]}.</span>{" "}
                 {phase === "live" &&
-                  `${daysLeft === 0 ? "Final day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}. Most LP takes the prize pool.`}
+                  `${daysLeft === 0 ? "Final day!" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}. Most LP takes ${prizeLabel}.`}
                 {phase === "upcoming" &&
                   `Starts in ${daysToStart} day${daysToStart === 1 ? "" : "s"}. Most LP takes the prize pool.`}
                 {phase === "finished" && "Season complete. These are the final standings."}
