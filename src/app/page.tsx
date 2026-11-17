@@ -245,7 +245,12 @@ export default async function Home() {
         <ul className="tilt-tiles grid grid-cols-2 gap-x-3 gap-y-20 pt-12 sm:gap-x-4 md:grid-cols-3 lg:grid-cols-5">
           {FACTIONS.map((f, i) => {
             const stat = factionStats.get(f.id);
-            const style = { "--pattern": `url(${f.patternSm})`, "--tint": f.color } as CSSProperties;
+            const style = {
+              "--pattern": `url(${f.patternSm})`,
+              "--tint": f.color,
+              // The Marquise's portrait pops out a little further than the rest.
+              ...(f.id === "marquise" && { "--extra-lift": "1rem" }),
+            } as CSSProperties;
             return (
               <li key={f.id}>
                 <Link href={`/factions/${f.id}`} className="faction-tile h-full" style={style}>

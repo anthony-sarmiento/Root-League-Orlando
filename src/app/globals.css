@@ -460,7 +460,7 @@ textarea.field { min-height: 6rem; resize: vertical; }
 /* Every critter is the same height and travels the same distance, so each one clears the box by the same amount. */
 .tile-critter img { height: 8rem; width: auto; max-width: none; }
 .faction-tile:hover .tile-critter, .faction-tile:focus-visible .tile-critter {
-  transform: translateY(-7rem) rotate(var(--r, 0deg));
+  transform: translateY(calc(-7rem - var(--extra-lift, 0rem))) rotate(var(--r, 0deg));
 }
 .faction-tile .faction-icon { transition: transform 0.35s var(--ease-out); }
 .faction-tile:hover .faction-icon { transform: scale(1.12) rotate(-6deg); }
