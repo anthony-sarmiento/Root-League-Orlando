@@ -77,7 +77,7 @@ export default async function SessionsPage() {
       )}
 
       <section className="space-y-6">
-        <SectionHeading onDark title="Past nights" description="Who took each table, night by night." />
+        <SectionHeading onDark title="Past nights" />
         {past.length === 0 && <p className="card p-6 text-bark-soft">No game nights have been played yet.</p>}
         <ol className="relative space-y-4 border-l-2 border-dashed border-parchment/30 pl-6 sm:pl-8">
           {past.map((s) => {
